@@ -1,0 +1,2236 @@
+
+# Analysis
+
+- **Observed Trend 1**: As latitude approaches zero, temperature tends to increase.
+- **Observed Trend 2**: There was no observable pattern to variation in humidity, cloudiness, or wind speed as latitude changed.
+- **Observed Trend 3**: There was a noticeable increase in humidity between 0 to 20 degrees South; this is likely because the land mass between these latitudes is largely dominated by rainforest, but more research would need to be done to investigate this hypothesis before drawing conclusions.
+
+# Getting Started: Importing Dependencies
+
+*Note: This code will not work if the citipy package is not installed. Visit https://github.com/wingchen/citipy for more info on this package.
+
+
+```python
+# Dependencies
+import csv
+import matplotlib.pyplot as plt
+import seaborn as sns
+import requests as req
+import pandas as pd
+from citipy import citipy
+import numpy as np
+import os
+```
+
+# Generating a list of 500+ cities
+
+
+```python
+# Generate a list of 90 latitudes to cover the range from the
+# southern-most and northern-most areas of the globe.
+latitudes = np.arange(-90, 90, 2)
+
+#Generate a list of 90 longitudes to cover a variety of
+# locations ranging from east-west.
+longitudes = np.arange(-180, 180, 4)
+
+# Initiate an empty list to hold all city names.
+cities = []
+
+# Loop through lat/long lists and for each pairing, generate
+# the name of the nearest city using the citipy package.
+for latitude in latitudes:
+    for longitude in longitudes:
+        city = citipy.nearest_city(latitude, longitude).city_name
+        # If the most recently generated city isn't in the list of
+        # cities, add it.
+        if city not in cities:
+            cities.append(city)
+
+# Check the list length to make sure we have at least 500 unique cities.
+print(str(len(cities)))
+```
+
+    2133
+    
+
+# Look up weather data for city list
+
+For each city, find the following:
+- Latitude (remember, before we just used a lat/long combination to find the *nearest* city. We would like more precise latitude/long data for each city.
+- Longitude
+- Temperature (deg. F)
+- Humidity (%)
+- Cloudiness (%)
+- Wind speed (mph)
+
+Print number, name, and URL to a log file for each city as results are generated from the API call. Then save all data retrieved to a csv file.
+
+
+```python
+# Define parameters for API requests
+api_key = '16aac2742b26c95c8dbf451537f73963'
+endpoint = "http://api.openweathermap.org/data/2.5/weather"
+units = 'imperial'
+
+# Set up parameter dictionary
+param_dict = {
+    'appid': api_key,
+    'units': units
+}
+
+# Set up lists to hold necessary data.
+cities_final = []
+lat_data = []
+long_data = []
+temp_data = []
+humidity_data = []
+cloud_data = []
+wind_data = []
+
+# Initiate a counter to keep track of the number of cities.
+i = 0
+
+# Loop through cities and request weather data from OpenWeatherMap API.
+for city in cities:
+    # Some cities in our list will not be found in the OpenWeatherAPI,
+    # so use a try/except statement to handle Key Errors that we'll
+    # get when the city is not found.
+    try:
+        param_dict['q'] = city
+        response = req.get(endpoint, params=param_dict)
+        city_data = response.json()
+        lat_data.append(city_data['coord']['lat'])
+        long_data.append(city_data['coord']['lon'])
+        temp_data.append(city_data['main']['temp'])
+        humidity_data.append(city_data['main']['humidity'])
+        cloud_data.append(city_data['clouds']['all'])
+        wind_data.append(city_data['wind']['speed'])
+        cities_final.append(city)
+        i = i+1
+        
+        # Print results to console
+        print('City Number: ' + str(i) +
+               '; City Name: ' + city +
+               '; Requested URL: ' + endpoint + '?appid=' + api_key + 
+                '&units=' + units + '&q=' + city)
+        
+        # Print city name/number/URL to log file
+        output_path = os.path.join('output', 'log.txt')
+        log = open(output_path, 'a')
+        log.write('City Number: ' + str(i) +
+               '; City Name: ' + city +
+               '; Requested URL: ' + endpoint + '?appid=' + api_key + 
+                '&units=' + units + '&q=' + city + '\n')
+        log.close()
+    
+    # In the event of a Key Error, skip to the next iteration of the loop.
+    except KeyError:
+        continue
+
+# Check how many cities we were able to get weather data for.
+len(cities_final)
+```
+
+    City Number: 1; City Name: vaini; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=vaini
+    City Number: 2; City Name: rikitea; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=rikitea
+    City Number: 3; City Name: punta arenas; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=punta arenas
+    City Number: 4; City Name: ushuaia; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ushuaia
+    City Number: 5; City Name: hermanus; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=hermanus
+    City Number: 6; City Name: bredasdorp; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bredasdorp
+    City Number: 7; City Name: port elizabeth; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=port elizabeth
+    City Number: 8; City Name: port alfred; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=port alfred
+    City Number: 9; City Name: east london; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=east london
+    City Number: 10; City Name: busselton; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=busselton
+    City Number: 11; City Name: albany; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=albany
+    City Number: 12; City Name: new norfolk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=new norfolk
+    City Number: 13; City Name: hobart; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=hobart
+    City Number: 14; City Name: bluff; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bluff
+    City Number: 15; City Name: cape town; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=cape town
+    City Number: 16; City Name: kruisfontein; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kruisfontein
+    City Number: 17; City Name: mar del plata; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mar del plata
+    City Number: 18; City Name: saint-philippe; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=saint-philippe
+    City Number: 19; City Name: chuy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=chuy
+    City Number: 20; City Name: avarua; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=avarua
+    City Number: 21; City Name: tuatapere; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tuatapere
+    City Number: 22; City Name: cidreira; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=cidreira
+    City Number: 23; City Name: souillac; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=souillac
+    City Number: 24; City Name: portland; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=portland
+    City Number: 25; City Name: castro; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=castro
+    City Number: 26; City Name: mount gambier; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mount gambier
+    City Number: 27; City Name: arraial do cabo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=arraial do cabo
+    City Number: 28; City Name: rocha; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=rocha
+    City Number: 29; City Name: jamestown; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=jamestown
+    City Number: 30; City Name: mahebourg; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mahebourg
+    City Number: 31; City Name: dunedin; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=dunedin
+    City Number: 32; City Name: rio gallegos; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=rio gallegos
+    City Number: 33; City Name: rawson; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=rawson
+    City Number: 34; City Name: necochea; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=necochea
+    City Number: 35; City Name: port lincoln; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=port lincoln
+    City Number: 36; City Name: coihaique; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=coihaique
+    City Number: 37; City Name: comodoro rivadavia; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=comodoro rivadavia
+    City Number: 38; City Name: plettenberg bay; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=plettenberg bay
+    City Number: 39; City Name: esperance; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=esperance
+    City Number: 40; City Name: christchurch; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=christchurch
+    City Number: 41; City Name: saldanha; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=saldanha
+    City Number: 42; City Name: margate; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=margate
+    City Number: 43; City Name: burnie; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=burnie
+    City Number: 44; City Name: otautau; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=otautau
+    City Number: 45; City Name: waitati; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=waitati
+    City Number: 46; City Name: viedma; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=viedma
+    City Number: 47; City Name: te anau; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=te anau
+    City Number: 48; City Name: wanaka; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=wanaka
+    City Number: 49; City Name: rakaia; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=rakaia
+    City Number: 50; City Name: waipawa; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=waipawa
+    City Number: 51; City Name: ancud; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ancud
+    City Number: 52; City Name: puerto montt; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=puerto montt
+    City Number: 53; City Name: trelew; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=trelew
+    City Number: 54; City Name: puerto madryn; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=puerto madryn
+    City Number: 55; City Name: launceston; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=launceston
+    City Number: 56; City Name: batemans bay; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=batemans bay
+    City Number: 57; City Name: valdivia; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=valdivia
+    City Number: 58; City Name: panguipulli; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=panguipulli
+    City Number: 59; City Name: neuquen; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=neuquen
+    City Number: 60; City Name: tres arroyos; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tres arroyos
+    City Number: 61; City Name: maldonado; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=maldonado
+    City Number: 62; City Name: rio grande; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=rio grande
+    City Number: 63; City Name: laguna; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=laguna
+    City Number: 64; City Name: victor harbor; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=victor harbor
+    City Number: 65; City Name: colac; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=colac
+    City Number: 66; City Name: lakes entrance; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lakes entrance
+    City Number: 67; City Name: ulladulla; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ulladulla
+    City Number: 68; City Name: westport; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=westport
+    City Number: 69; City Name: takaka; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=takaka
+    City Number: 70; City Name: takapau; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=takapau
+    City Number: 71; City Name: lebu; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lebu
+    City Number: 72; City Name: mulchen; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mulchen
+    City Number: 73; City Name: santa rosa; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=santa rosa
+    City Number: 74; City Name: bambous virieux; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bambous virieux
+    City Number: 75; City Name: geelong; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=geelong
+    City Number: 76; City Name: nelson bay; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nelson bay
+    City Number: 77; City Name: okato; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=okato
+    City Number: 78; City Name: mamaku; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mamaku
+    City Number: 79; City Name: parral; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=parral
+    City Number: 80; City Name: san rafael; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=san rafael
+    City Number: 81; City Name: general pico; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=general pico
+    City Number: 82; City Name: veinticinco de mayo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=veinticinco de mayo
+    City Number: 83; City Name: paso de carrasco; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=paso de carrasco
+    City Number: 84; City Name: luderitz; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=luderitz
+    City Number: 85; City Name: richards bay; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=richards bay
+    City Number: 86; City Name: flinders; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=flinders
+    City Number: 87; City Name: murray bridge; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=murray bridge
+    City Number: 88; City Name: swan hill; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=swan hill
+    City Number: 89; City Name: tumut; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tumut
+    City Number: 90; City Name: port macquarie; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=port macquarie
+    City Number: 91; City Name: ahipara; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ahipara
+    City Number: 92; City Name: whitianga; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=whitianga
+    City Number: 93; City Name: constitucion; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=constitucion
+    City Number: 94; City Name: san antonio; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=san antonio
+    City Number: 95; City Name: rio cuarto; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=rio cuarto
+    City Number: 96; City Name: san pedro; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=san pedro
+    City Number: 97; City Name: florida; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=florida
+    City Number: 98; City Name: santa vitoria do palmar; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=santa vitoria do palmar
+    City Number: 99; City Name: sao joao da barra; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sao joao da barra
+    City Number: 100; City Name: robertson; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=robertson
+    City Number: 101; City Name: saint-joseph; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=saint-joseph
+    City Number: 102; City Name: geraldton; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=geraldton
+    City Number: 103; City Name: collie; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=collie
+    City Number: 104; City Name: young; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=young
+    City Number: 105; City Name: sydney; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sydney
+    City Number: 106; City Name: ngunguru; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ngunguru
+    City Number: 107; City Name: valparaiso; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=valparaiso
+    City Number: 108; City Name: la ligua; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=la ligua
+    City Number: 109; City Name: san juan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=san juan
+    City Number: 110; City Name: rio tercero; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=rio tercero
+    City Number: 111; City Name: parana; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=parana
+    City Number: 112; City Name: tacuarembo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tacuarembo
+    City Number: 113; City Name: oranjemund; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=oranjemund
+    City Number: 114; City Name: calvinia; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=calvinia
+    City Number: 115; City Name: graaff-reinet; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=graaff-reinet
+    City Number: 116; City Name: butterworth; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=butterworth
+    City Number: 117; City Name: beloha; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=beloha
+    City Number: 118; City Name: carnarvon; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=carnarvon
+    City Number: 119; City Name: perth; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=perth
+    City Number: 120; City Name: port augusta; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=port augusta
+    City Number: 121; City Name: broken hill; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=broken hill
+    City Number: 122; City Name: dubbo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=dubbo
+    City Number: 123; City Name: taree; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=taree
+    City Number: 124; City Name: sawtell; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sawtell
+    City Number: 125; City Name: russell; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=russell
+    City Number: 126; City Name: alofi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=alofi
+    City Number: 127; City Name: coquimbo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=coquimbo
+    City Number: 128; City Name: la rioja; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=la rioja
+    City Number: 129; City Name: cordoba; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=cordoba
+    City Number: 130; City Name: reconquista; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=reconquista
+    City Number: 131; City Name: alegrete; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=alegrete
+    City Number: 132; City Name: butia; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=butia
+    City Number: 133; City Name: imbituba; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=imbituba
+    City Number: 134; City Name: vila velha; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=vila velha
+    City Number: 135; City Name: de aar; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=de aar
+    City Number: 136; City Name: quthing; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=quthing
+    City Number: 137; City Name: ballitoville; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ballitoville
+    City Number: 138; City Name: northam; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=northam
+    City Number: 139; City Name: yulara; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=yulara
+    City Number: 140; City Name: narrabri; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=narrabri
+    City Number: 141; City Name: armidale; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=armidale
+    City Number: 142; City Name: ballina; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ballina
+    City Number: 143; City Name: byron bay; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=byron bay
+    City Number: 144; City Name: noumea; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=noumea
+    City Number: 145; City Name: kaeo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kaeo
+    City Number: 146; City Name: puerto ayora; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=puerto ayora
+    City Number: 147; City Name: pisco; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pisco
+    City Number: 148; City Name: vallenar; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=vallenar
+    City Number: 149; City Name: santiago del estero; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=santiago del estero
+    City Number: 150; City Name: resistencia; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=resistencia
+    City Number: 151; City Name: posadas; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=posadas
+    City Number: 152; City Name: tapejara; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tapejara
+    City Number: 153; City Name: florianopolis; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=florianopolis
+    City Number: 154; City Name: ilhabela; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ilhabela
+    City Number: 155; City Name: karasburg; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=karasburg
+    City Number: 156; City Name: danielskuil; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=danielskuil
+    City Number: 157; City Name: bethlehem; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bethlehem
+    City Number: 158; City Name: ulundi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ulundi
+    City Number: 159; City Name: xai-xai; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=xai-xai
+    City Number: 160; City Name: ampanihy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ampanihy
+    City Number: 161; City Name: alice springs; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=alice springs
+    City Number: 162; City Name: roma; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=roma
+    City Number: 163; City Name: warwick; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=warwick
+    City Number: 164; City Name: vao; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=vao
+    City Number: 165; City Name: taltal; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=taltal
+    City Number: 166; City Name: diego de almagro; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=diego de almagro
+    City Number: 167; City Name: presidencia roque saenz pena; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=presidencia roque saenz pena
+    City Number: 168; City Name: abai; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=abai
+    City Number: 169; City Name: pinhao; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pinhao
+    City Number: 170; City Name: pontal do parana; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pontal do parana
+    City Number: 171; City Name: guarapari; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=guarapari
+    City Number: 172; City Name: walvis bay; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=walvis bay
+    City Number: 173; City Name: werda; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=werda
+    City Number: 174; City Name: midrand; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=midrand
+    City Number: 175; City Name: mhlume; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mhlume
+    City Number: 176; City Name: inhambane; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=inhambane
+    City Number: 177; City Name: port hedland; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=port hedland
+    City Number: 178; City Name: mount isa; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mount isa
+    City Number: 179; City Name: kingaroy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kingaroy
+    City Number: 180; City Name: gold coast; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=gold coast
+    City Number: 181; City Name: antofagasta; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=antofagasta
+    City Number: 182; City Name: calama; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=calama
+    City Number: 183; City Name: libertador general san martin; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=libertador general san martin
+    City Number: 184; City Name: lima; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lima
+    City Number: 185; City Name: barbosa ferraz; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=barbosa ferraz
+    City Number: 186; City Name: capao bonito; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=capao bonito
+    City Number: 187; City Name: mangaratiba; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mangaratiba
+    City Number: 188; City Name: caravelas; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=caravelas
+    City Number: 189; City Name: rehoboth; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=rehoboth
+    City Number: 190; City Name: aranos; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=aranos
+    City Number: 191; City Name: dutlwe; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=dutlwe
+    City Number: 192; City Name: ellisras; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ellisras
+    City Number: 193; City Name: phalaborwa; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=phalaborwa
+    City Number: 194; City Name: betioky; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=betioky
+    City Number: 195; City Name: vangaindrano; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=vangaindrano
+    City Number: 196; City Name: farafangana; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=farafangana
+    City Number: 197; City Name: hithadhoo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=hithadhoo
+    City Number: 198; City Name: bengkulu; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bengkulu
+    City Number: 199; City Name: broome; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=broome
+    City Number: 200; City Name: emerald; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=emerald
+    City Number: 201; City Name: gladstone; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=gladstone
+    City Number: 202; City Name: koumac; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=koumac
+    City Number: 203; City Name: bourail; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bourail
+    City Number: 204; City Name: isangel; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=isangel
+    City Number: 205; City Name: pangai; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pangai
+    City Number: 206; City Name: hualmay; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=hualmay
+    City Number: 207; City Name: tocopilla; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tocopilla
+    City Number: 208; City Name: yacuiba; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=yacuiba
+    City Number: 209; City Name: filadelfia; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=filadelfia
+    City Number: 210; City Name: bela vista; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bela vista
+    City Number: 211; City Name: presidente venceslau; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=presidente venceslau
+    City Number: 212; City Name: ibate; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ibate
+    City Number: 213; City Name: lima duarte; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lima duarte
+    City Number: 214; City Name: georgetown; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=georgetown
+    City Number: 215; City Name: karibib; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=karibib
+    City Number: 216; City Name: gobabis; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=gobabis
+    City Number: 217; City Name: tobane; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tobane
+    City Number: 218; City Name: chiredzi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=chiredzi
+    City Number: 219; City Name: ankazoabo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ankazoabo
+    City Number: 220; City Name: manakara; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=manakara
+    City Number: 221; City Name: saint-leu; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=saint-leu
+    City Number: 222; City Name: labuhan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=labuhan
+    City Number: 223; City Name: karratha; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=karratha
+    City Number: 224; City Name: charters towers; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=charters towers
+    City Number: 225; City Name: moranbah; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=moranbah
+    City Number: 226; City Name: yeppoon; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=yeppoon
+    City Number: 227; City Name: poum; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=poum
+    City Number: 228; City Name: voh; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=voh
+    City Number: 229; City Name: tadine; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tadine
+    City Number: 230; City Name: moerai; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=moerai
+    City Number: 231; City Name: teahupoo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=teahupoo
+    City Number: 232; City Name: tautira; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tautira
+    City Number: 233; City Name: camana; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=camana
+    City Number: 234; City Name: iquique; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=iquique
+    City Number: 235; City Name: uyuni; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=uyuni
+    City Number: 236; City Name: monteagudo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=monteagudo
+    City Number: 237; City Name: miranda; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=miranda
+    City Number: 238; City Name: tres lagoas; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tres lagoas
+    City Number: 239; City Name: miguelopolis; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=miguelopolis
+    City Number: 240; City Name: ibirite; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ibirite
+    City Number: 241; City Name: serra; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=serra
+    City Number: 242; City Name: namibe; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=namibe
+    City Number: 243; City Name: opuwo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=opuwo
+    City Number: 244; City Name: outjo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=outjo
+    City Number: 245; City Name: grootfontein; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=grootfontein
+    City Number: 246; City Name: maun; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=maun
+    City Number: 247; City Name: bulawayo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bulawayo
+    City Number: 248; City Name: chipinge; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=chipinge
+    City Number: 249; City Name: beira; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=beira
+    City Number: 250; City Name: morondava; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=morondava
+    City Number: 251; City Name: marolambo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=marolambo
+    City Number: 252; City Name: sainte-suzanne; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sainte-suzanne
+    City Number: 253; City Name: kununurra; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kununurra
+    City Number: 254; City Name: bowen; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bowen
+    City Number: 255; City Name: mackay; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mackay
+    City Number: 256; City Name: bundaberg; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bundaberg
+    City Number: 257; City Name: neiafu; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=neiafu
+    City Number: 258; City Name: vaitape; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=vaitape
+    City Number: 259; City Name: tevaitoa; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tevaitoa
+    City Number: 260; City Name: acari; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=acari
+    City Number: 261; City Name: ilo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ilo
+    City Number: 262; City Name: mairana; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mairana
+    City Number: 263; City Name: coxim; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=coxim
+    City Number: 264; City Name: jatai; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=jatai
+    City Number: 265; City Name: catalao; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=catalao
+    City Number: 266; City Name: diamantina; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=diamantina
+    City Number: 267; City Name: montanha; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=montanha
+    City Number: 268; City Name: belmonte; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=belmonte
+    City Number: 269; City Name: ondangwa; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ondangwa
+    City Number: 270; City Name: rundu; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=rundu
+    City Number: 271; City Name: sinazongwe; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sinazongwe
+    City Number: 272; City Name: marondera; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=marondera
+    City Number: 273; City Name: quelimane; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=quelimane
+    City Number: 274; City Name: miandrivazo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=miandrivazo
+    City Number: 275; City Name: anjozorobe; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=anjozorobe
+    City Number: 276; City Name: grand baie; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=grand baie
+    City Number: 277; City Name: grand gaube; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=grand gaube
+    City Number: 278; City Name: quatre cocos; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=quatre cocos
+    City Number: 279; City Name: katherine; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=katherine
+    City Number: 280; City Name: atherton; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=atherton
+    City Number: 281; City Name: ayr; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ayr
+    City Number: 282; City Name: vila; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=vila
+    City Number: 283; City Name: faanui; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=faanui
+    City Number: 284; City Name: tiarei; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tiarei
+    City Number: 285; City Name: atuona; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=atuona
+    City Number: 286; City Name: huarmey; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=huarmey
+    City Number: 287; City Name: lluta; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lluta
+    City Number: 288; City Name: coroico; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=coroico
+    City Number: 289; City Name: ascension; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ascension
+    City Number: 290; City Name: santo antonio do leverger; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=santo antonio do leverger
+    City Number: 291; City Name: aragarcas; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=aragarcas
+    City Number: 292; City Name: brasilia; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=brasilia
+    City Number: 293; City Name: sao joao da ponte; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sao joao da ponte
+    City Number: 294; City Name: itarantim; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=itarantim
+    City Number: 295; City Name: maceio; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=maceio
+    City Number: 296; City Name: ondjiva; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ondjiva
+    City Number: 297; City Name: senanga; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=senanga
+    City Number: 298; City Name: mazabuka; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mazabuka
+    City Number: 299; City Name: mount darwin; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mount darwin
+    City Number: 300; City Name: phalombe; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=phalombe
+    City Number: 301; City Name: mahajanga; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mahajanga
+    City Number: 302; City Name: tsaratanana; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tsaratanana
+    City Number: 303; City Name: antalaha; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=antalaha
+    City Number: 304; City Name: cap malheureux; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=cap malheureux
+    City Number: 305; City Name: bambanglipuro; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bambanglipuro
+    City Number: 306; City Name: alyangula; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=alyangula
+    City Number: 307; City Name: mareeba; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mareeba
+    City Number: 308; City Name: cairns; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=cairns
+    City Number: 309; City Name: samarai; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=samarai
+    City Number: 310; City Name: luganville; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=luganville
+    City Number: 311; City Name: lakatoro; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lakatoro
+    City Number: 312; City Name: pata; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pata
+    City Number: 313; City Name: san cristobal; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=san cristobal
+    City Number: 314; City Name: subtanjalla; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=subtanjalla
+    City Number: 315; City Name: santo tomas; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=santo tomas
+    City Number: 316; City Name: rurrenabaque; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=rurrenabaque
+    City Number: 317; City Name: san ramon; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=san ramon
+    City Number: 318; City Name: vilhena; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=vilhena
+    City Number: 319; City Name: diamantino; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=diamantino
+    City Number: 320; City Name: mozarlandia; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mozarlandia
+    City Number: 321; City Name: cavalcante; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=cavalcante
+    City Number: 322; City Name: carinhanha; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=carinhanha
+    City Number: 323; City Name: jitauna; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=jitauna
+    City Number: 324; City Name: camacari; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=camacari
+    City Number: 325; City Name: coruripe; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=coruripe
+    City Number: 326; City Name: maragogi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=maragogi
+    City Number: 327; City Name: caconda; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=caconda
+    City Number: 328; City Name: luena; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=luena
+    City Number: 329; City Name: kabompo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kabompo
+    City Number: 330; City Name: mpongwe; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mpongwe
+    City Number: 331; City Name: mangochi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mangochi
+    City Number: 332; City Name: boueni; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=boueni
+    City Number: 333; City Name: ambanja; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ambanja
+    City Number: 334; City Name: sambava; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sambava
+    City Number: 335; City Name: srandakan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=srandakan
+    City Number: 336; City Name: praya; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=praya
+    City Number: 337; City Name: waingapu; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=waingapu
+    City Number: 338; City Name: kupang; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kupang
+    City Number: 339; City Name: port keats; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=port keats
+    City Number: 340; City Name: gizo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=gizo
+    City Number: 341; City Name: kirakira; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kirakira
+    City Number: 342; City Name: sola; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sola
+    City Number: 343; City Name: asau; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=asau
+    City Number: 344; City Name: fare; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=fare
+    City Number: 345; City Name: pimentel; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pimentel
+    City Number: 346; City Name: chimbote; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=chimbote
+    City Number: 347; City Name: pangoa; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pangoa
+    City Number: 348; City Name: cobija; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=cobija
+    City Number: 349; City Name: alta floresta; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=alta floresta
+    City Number: 350; City Name: sao miguel do araguaia; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sao miguel do araguaia
+    City Number: 351; City Name: ibotirama; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ibotirama
+    City Number: 352; City Name: baixa grande; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=baixa grande
+    City Number: 353; City Name: aracaju; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=aracaju
+    City Number: 354; City Name: sao jose da coroa grande; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sao jose da coroa grande
+    City Number: 355; City Name: benguela; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=benguela
+    City Number: 356; City Name: huambo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=huambo
+    City Number: 357; City Name: mwinilunga; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mwinilunga
+    City Number: 358; City Name: chililabombwe; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=chililabombwe
+    City Number: 359; City Name: mpika; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mpika
+    City Number: 360; City Name: tingi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tingi
+    City Number: 361; City Name: pemba; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pemba
+    City Number: 362; City Name: fomboni; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=fomboni
+    City Number: 363; City Name: ambilobe; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ambilobe
+    City Number: 364; City Name: kroya; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kroya
+    City Number: 365; City Name: kanigoro; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kanigoro
+    City Number: 366; City Name: nhulunbuy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nhulunbuy
+    City Number: 367; City Name: daru; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=daru
+    City Number: 368; City Name: port moresby; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=port moresby
+    City Number: 369; City Name: lata; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lata
+    City Number: 370; City Name: sechura; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sechura
+    City Number: 371; City Name: chicama; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=chicama
+    City Number: 372; City Name: ambo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ambo
+    City Number: 373; City Name: porto walter; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=porto walter
+    City Number: 374; City Name: rio branco; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=rio branco
+    City Number: 375; City Name: ariquemes; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ariquemes
+    City Number: 376; City Name: aripuana; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=aripuana
+    City Number: 377; City Name: palmas; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=palmas
+    City Number: 378; City Name: bom jesus; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bom jesus
+    City Number: 379; City Name: jaguarari; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=jaguarari
+    City Number: 380; City Name: olinda; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=olinda
+    City Number: 381; City Name: luanda; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=luanda
+    City Number: 382; City Name: malanje; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=malanje
+    City Number: 383; City Name: saurimo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=saurimo
+    City Number: 384; City Name: kamina; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kamina
+    City Number: 385; City Name: mwense; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mwense
+    City Number: 386; City Name: chinsali; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=chinsali
+    City Number: 387; City Name: mahanje; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mahanje
+    City Number: 388; City Name: lindi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lindi
+    City Number: 389; City Name: mitsamiouli; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mitsamiouli
+    City Number: 390; City Name: victoria; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=victoria
+    City Number: 391; City Name: padang; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=padang
+    City Number: 392; City Name: kawalu; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kawalu
+    City Number: 393; City Name: soe; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=soe
+    City Number: 394; City Name: merauke; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=merauke
+    City Number: 395; City Name: honiara; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=honiara
+    City Number: 396; City Name: cruzeiro do sul; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=cruzeiro do sul
+    City Number: 397; City Name: boca do acre; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=boca do acre
+    City Number: 398; City Name: porto velho; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=porto velho
+    City Number: 399; City Name: sao felix do xingu; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sao felix do xingu
+    City Number: 400; City Name: araguaina; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=araguaina
+    City Number: 401; City Name: urucui; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=urucui
+    City Number: 402; City Name: ouricuri; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ouricuri
+    City Number: 403; City Name: toritama; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=toritama
+    City Number: 404; City Name: itamaraca; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=itamaraca
+    City Number: 405; City Name: pitimbu; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pitimbu
+    City Number: 406; City Name: gamba; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=gamba
+    City Number: 407; City Name: camabatela; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=camabatela
+    City Number: 408; City Name: lucapa; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lucapa
+    City Number: 409; City Name: kaniama; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kaniama
+    City Number: 410; City Name: manono; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=manono
+    City Number: 411; City Name: sumbawanga; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sumbawanga
+    City Number: 412; City Name: ilula; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ilula
+    City Number: 413; City Name: kilindoni; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kilindoni
+    City Number: 414; City Name: tulungagung; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tulungagung
+    City Number: 415; City Name: mataram; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mataram
+    City Number: 416; City Name: ruteng; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ruteng
+    City Number: 417; City Name: atambua; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=atambua
+    City Number: 418; City Name: tual; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tual
+    City Number: 419; City Name: popondetta; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=popondetta
+    City Number: 420; City Name: buala; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=buala
+    City Number: 421; City Name: paita; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=paita
+    City Number: 422; City Name: olmos; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=olmos
+    City Number: 423; City Name: yurimaguas; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=yurimaguas
+    City Number: 424; City Name: jutai; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=jutai
+    City Number: 425; City Name: canutama; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=canutama
+    City Number: 426; City Name: novo aripuana; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=novo aripuana
+    City Number: 427; City Name: jacareacanga; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=jacareacanga
+    City Number: 428; City Name: colinas; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=colinas
+    City Number: 429; City Name: sao tome; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sao tome
+    City Number: 430; City Name: cabedelo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=cabedelo
+    City Number: 431; City Name: port-gentil; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=port-gentil
+    City Number: 432; City Name: omboue; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=omboue
+    City Number: 433; City Name: mayumba; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mayumba
+    City Number: 434; City Name: kasongo-lunda; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kasongo-lunda
+    City Number: 435; City Name: tshikapa; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tshikapa
+    City Number: 436; City Name: mbuji-mayi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mbuji-mayi
+    City Number: 437; City Name: kabalo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kabalo
+    City Number: 438; City Name: inyonga; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=inyonga
+    City Number: 439; City Name: msanga; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=msanga
+    City Number: 440; City Name: sokoni; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sokoni
+    City Number: 441; City Name: micheweni; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=micheweni
+    City Number: 442; City Name: meulaboh; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=meulaboh
+    City Number: 443; City Name: pringsewu; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pringsewu
+    City Number: 444; City Name: pamanukan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pamanukan
+    City Number: 445; City Name: lasem; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lasem
+    City Number: 446; City Name: singaraja; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=singaraja
+    City Number: 447; City Name: ambon; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ambon
+    City Number: 448; City Name: nabire; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nabire
+    City Number: 449; City Name: kiunga; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kiunga
+    City Number: 450; City Name: mount hagen; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mount hagen
+    City Number: 451; City Name: finschhafen; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=finschhafen
+    City Number: 452; City Name: kokopo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kokopo
+    City Number: 453; City Name: kieta; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kieta
+    City Number: 454; City Name: auki; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=auki
+    City Number: 455; City Name: talara; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=talara
+    City Number: 456; City Name: barranca; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=barranca
+    City Number: 457; City Name: iquitos; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=iquitos
+    City Number: 458; City Name: santo antonio do ica; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=santo antonio do ica
+    City Number: 459; City Name: coari; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=coari
+    City Number: 460; City Name: borba; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=borba
+    City Number: 461; City Name: itaituba; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=itaituba
+    City Number: 462; City Name: altamira; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=altamira
+    City Number: 463; City Name: paragominas; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=paragominas
+    City Number: 464; City Name: coroata; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=coroata
+    City Number: 465; City Name: iraucuba; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=iraucuba
+    City Number: 466; City Name: macau; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=macau
+    City Number: 467; City Name: touros; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=touros
+    City Number: 468; City Name: nisia floresta; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nisia floresta
+    City Number: 469; City Name: axim; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=axim
+    City Number: 470; City Name: takoradi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=takoradi
+    City Number: 471; City Name: brazzaville; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=brazzaville
+    City Number: 472; City Name: mangai; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mangai
+    City Number: 473; City Name: lodja; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lodja
+    City Number: 474; City Name: uvira; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=uvira
+    City Number: 475; City Name: masumbwe; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=masumbwe
+    City Number: 476; City Name: magugu; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=magugu
+    City Number: 477; City Name: mombasa; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mombasa
+    City Number: 478; City Name: hambantota; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=hambantota
+    City Number: 479; City Name: sibolga; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sibolga
+    City Number: 480; City Name: baturaja; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=baturaja
+    City Number: 481; City Name: manggar; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=manggar
+    City Number: 482; City Name: pangkalanbuun; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pangkalanbuun
+    City Number: 483; City Name: martapura; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=martapura
+    City Number: 484; City Name: kendari; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kendari
+    City Number: 485; City Name: vanimo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=vanimo
+    City Number: 486; City Name: angoram; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=angoram
+    City Number: 487; City Name: lorengau; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lorengau
+    City Number: 488; City Name: rabaul; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=rabaul
+    City Number: 489; City Name: san patricio; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=san patricio
+    City Number: 490; City Name: salinas; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=salinas
+    City Number: 491; City Name: el triunfo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=el triunfo
+    City Number: 492; City Name: palora; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=palora
+    City Number: 493; City Name: tonantins; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tonantins
+    City Number: 494; City Name: maraa; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=maraa
+    City Number: 495; City Name: manaus; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=manaus
+    City Number: 496; City Name: juruti; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=juruti
+    City Number: 497; City Name: porto de moz; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=porto de moz
+    City Number: 498; City Name: acara; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=acara
+    City Number: 499; City Name: sao jose de ribamar; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sao jose de ribamar
+    City Number: 500; City Name: acarau; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=acarau
+    City Number: 501; City Name: aquiraz; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=aquiraz
+    City Number: 502; City Name: harper; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=harper
+    City Number: 503; City Name: mbigou; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mbigou
+    City Number: 504; City Name: gamboma; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=gamboma
+    City Number: 505; City Name: inongo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=inongo
+    City Number: 506; City Name: kabare; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kabare
+    City Number: 507; City Name: muleba; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=muleba
+    City Number: 508; City Name: magadi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=magadi
+    City Number: 509; City Name: witu; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=witu
+    City Number: 510; City Name: mogadishu; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mogadishu
+    City Number: 511; City Name: jambi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=jambi
+    City Number: 512; City Name: barabai; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=barabai
+    City Number: 513; City Name: poso; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=poso
+    City Number: 514; City Name: luwuk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=luwuk
+    City Number: 515; City Name: amahai; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=amahai
+    City Number: 516; City Name: sorong; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sorong
+    City Number: 517; City Name: wewak; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=wewak
+    City Number: 518; City Name: kavieng; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kavieng
+    City Number: 519; City Name: namatanai; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=namatanai
+    City Number: 520; City Name: lufilufi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lufilufi
+    City Number: 521; City Name: lazaro cardenas; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lazaro cardenas
+    City Number: 522; City Name: manta; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=manta
+    City Number: 523; City Name: pedernales; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pedernales
+    City Number: 524; City Name: puerto asis; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=puerto asis
+    City Number: 525; City Name: miraflores; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=miraflores
+    City Number: 526; City Name: sao gabriel da cachoeira; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sao gabriel da cachoeira
+    City Number: 527; City Name: santa isabel do rio negro; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=santa isabel do rio negro
+    City Number: 528; City Name: boa vista; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=boa vista
+    City Number: 529; City Name: oriximina; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=oriximina
+    City Number: 530; City Name: mazagao; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mazagao
+    City Number: 531; City Name: curuca; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=curuca
+    City Number: 532; City Name: cururupu; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=cururupu
+    City Number: 533; City Name: caucaia; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=caucaia
+    City Number: 534; City Name: booue; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=booue
+    City Number: 535; City Name: owando; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=owando
+    City Number: 536; City Name: boende; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=boende
+    City Number: 537; City Name: yangambi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=yangambi
+    City Number: 538; City Name: butembo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=butembo
+    City Number: 539; City Name: rongai; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=rongai
+    City Number: 540; City Name: garissa; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=garissa
+    City Number: 541; City Name: thinadhoo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=thinadhoo
+    City Number: 542; City Name: matara; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=matara
+    City Number: 543; City Name: payakumbuh; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=payakumbuh
+    City Number: 544; City Name: kijang; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kijang
+    City Number: 545; City Name: sungairaya; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sungairaya
+    City Number: 546; City Name: loa janan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=loa janan
+    City Number: 547; City Name: palu; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=palu
+    City Number: 548; City Name: gorontalo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=gorontalo
+    City Number: 549; City Name: aitape; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=aitape
+    City Number: 550; City Name: hilo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=hilo
+    City Number: 551; City Name: coahuayana; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=coahuayana
+    City Number: 552; City Name: ixtapa; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ixtapa
+    City Number: 553; City Name: muisne; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=muisne
+    City Number: 554; City Name: esmeraldas; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=esmeraldas
+    City Number: 555; City Name: saladoblanco; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=saladoblanco
+    City Number: 556; City Name: calamar; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=calamar
+    City Number: 557; City Name: inirida; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=inirida
+    City Number: 558; City Name: grand-santi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=grand-santi
+    City Number: 559; City Name: salinopolis; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=salinopolis
+    City Number: 560; City Name: carutapera; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=carutapera
+    City Number: 561; City Name: trairi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=trairi
+    City Number: 562; City Name: bubaque; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bubaque
+    City Number: 563; City Name: goderich; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=goderich
+    City Number: 564; City Name: buchanan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=buchanan
+    City Number: 565; City Name: jacqueville; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=jacqueville
+    City Number: 566; City Name: cape coast; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=cape coast
+    City Number: 567; City Name: yenagoa; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=yenagoa
+    City Number: 568; City Name: luba; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=luba
+    City Number: 569; City Name: bitam; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bitam
+    City Number: 570; City Name: ouesso; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ouesso
+    City Number: 571; City Name: binga; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=binga
+    City Number: 572; City Name: aketi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=aketi
+    City Number: 573; City Name: wamba; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=wamba
+    City Number: 574; City Name: masindi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=masindi
+    City Number: 575; City Name: amudat; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=amudat
+    City Number: 576; City Name: wajir; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=wajir
+    City Number: 577; City Name: jawhar; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=jawhar
+    City Number: 578; City Name: hobyo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=hobyo
+    City Number: 579; City Name: kudahuvadhoo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kudahuvadhoo
+    City Number: 580; City Name: muli; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=muli
+    City Number: 581; City Name: rantauprapat; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=rantauprapat
+    City Number: 582; City Name: kota tinggi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kota tinggi
+    City Number: 583; City Name: pemangkat; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pemangkat
+    City Number: 584; City Name: sibu; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sibu
+    City Number: 585; City Name: tarakan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tarakan
+    City Number: 586; City Name: manado; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=manado
+    City Number: 587; City Name: ternate; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ternate
+    City Number: 588; City Name: butaritari; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=butaritari
+    City Number: 589; City Name: cabo san lucas; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=cabo san lucas
+    City Number: 590; City Name: puerto baquerizo moreno; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=puerto baquerizo moreno
+    City Number: 591; City Name: mosquera; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mosquera
+    City Number: 592; City Name: tulua; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tulua
+    City Number: 593; City Name: puerto gaitan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=puerto gaitan
+    City Number: 594; City Name: brokopondo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=brokopondo
+    City Number: 595; City Name: saint-georges; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=saint-georges
+    City Number: 596; City Name: sao filipe; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sao filipe
+    City Number: 597; City Name: bonthe; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bonthe
+    City Number: 598; City Name: monrovia; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=monrovia
+    City Number: 599; City Name: winneba; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=winneba
+    City Number: 600; City Name: warri; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=warri
+    City Number: 601; City Name: berberati; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=berberati
+    City Number: 602; City Name: bosobolo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bosobolo
+    City Number: 603; City Name: bondo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bondo
+    City Number: 604; City Name: yambio; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=yambio
+    City Number: 605; City Name: moyo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=moyo
+    City Number: 606; City Name: lodwar; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lodwar
+    City Number: 607; City Name: moyale; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=moyale
+    City Number: 608; City Name: xuddur; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=xuddur
+    City Number: 609; City Name: eyl; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=eyl
+    City Number: 610; City Name: mahibadhoo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mahibadhoo
+    City Number: 611; City Name: male; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=male
+    City Number: 612; City Name: weligama; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=weligama
+    City Number: 613; City Name: kalmunai; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kalmunai
+    City Number: 614; City Name: banda aceh; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=banda aceh
+    City Number: 615; City Name: lumut; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lumut
+    City Number: 616; City Name: cukai; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=cukai
+    City Number: 617; City Name: bintulu; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bintulu
+    City Number: 618; City Name: limbang; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=limbang
+    City Number: 619; City Name: manuk mangkaw; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=manuk mangkaw
+    City Number: 620; City Name: sarangani; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sarangani
+    City Number: 621; City Name: kloulklubed; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kloulklubed
+    City Number: 622; City Name: nanakuli; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nanakuli
+    City Number: 623; City Name: puerto escondido; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=puerto escondido
+    City Number: 624; City Name: nicoya; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nicoya
+    City Number: 625; City Name: la palma; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=la palma
+    City Number: 626; City Name: salgar; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=salgar
+    City Number: 627; City Name: puerto ayacucho; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=puerto ayacucho
+    City Number: 628; City Name: ciudad bolivar; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ciudad bolivar
+    City Number: 629; City Name: bartica; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bartica
+    City Number: 630; City Name: totness; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=totness
+    City Number: 631; City Name: kourou; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kourou
+    City Number: 632; City Name: robertsport; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=robertsport
+    City Number: 633; City Name: zwedru; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=zwedru
+    City Number: 634; City Name: adzope; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=adzope
+    City Number: 635; City Name: akropong; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=akropong
+    City Number: 636; City Name: epe; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=epe
+    City Number: 637; City Name: afikpo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=afikpo
+    City Number: 638; City Name: banyo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=banyo
+    City Number: 639; City Name: baoro; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=baoro
+    City Number: 640; City Name: rafai; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=rafai
+    City Number: 641; City Name: tambura; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tambura
+    City Number: 642; City Name: juba; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=juba
+    City Number: 643; City Name: bako; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bako
+    City Number: 644; City Name: goba; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=goba
+    City Number: 645; City Name: bandarbeyla; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bandarbeyla
+    City Number: 646; City Name: ugoofaaru; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ugoofaaru
+    City Number: 647; City Name: manavalakurichi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=manavalakurichi
+    City Number: 648; City Name: galle; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=galle
+    City Number: 649; City Name: sabang; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sabang
+    City Number: 650; City Name: sigli; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sigli
+    City Number: 651; City Name: kuala kedah; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kuala kedah
+    City Number: 652; City Name: kuala terengganu; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kuala terengganu
+    City Number: 653; City Name: miri; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=miri
+    City Number: 654; City Name: kota kinabalu; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kota kinabalu
+    City Number: 655; City Name: pandan niog; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pandan niog
+    City Number: 656; City Name: palimbang; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=palimbang
+    City Number: 657; City Name: kapaa; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kapaa
+    City Number: 658; City Name: makakilo city; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=makakilo city
+    City Number: 659; City Name: champerico; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=champerico
+    City Number: 660; City Name: acajutla; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=acajutla
+    City Number: 661; City Name: santa cruz; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=santa cruz
+    City Number: 662; City Name: buenos aires; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=buenos aires
+    City Number: 663; City Name: guarare; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=guarare
+    City Number: 664; City Name: tierralta; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tierralta
+    City Number: 665; City Name: san juan de colon; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=san juan de colon
+    City Number: 666; City Name: calabozo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=calabozo
+    City Number: 667; City Name: mabaruma; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mabaruma
+    City Number: 668; City Name: sinnamary; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sinnamary
+    City Number: 669; City Name: cayenne; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=cayenne
+    City Number: 670; City Name: conakry; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=conakry
+    City Number: 671; City Name: serabu; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=serabu
+    City Number: 672; City Name: touba; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=touba
+    City Number: 673; City Name: dabakala; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=dabakala
+    City Number: 674; City Name: kpandae; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kpandae
+    City Number: 675; City Name: oyo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=oyo
+    City Number: 676; City Name: makurdi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=makurdi
+    City Number: 677; City Name: tignere; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tignere
+    City Number: 678; City Name: bol; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bol
+    City Number: 679; City Name: ndele; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ndele
+    City Number: 680; City Name: ouadda; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ouadda
+    City Number: 681; City Name: malakal; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=malakal
+    City Number: 682; City Name: gore; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=gore
+    City Number: 683; City Name: robe; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=robe
+    City Number: 684; City Name: hargeysa; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=hargeysa
+    City Number: 685; City Name: kavaratti; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kavaratti
+    City Number: 686; City Name: dhidhdhoo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=dhidhdhoo
+    City Number: 687; City Name: varkkallai; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=varkkallai
+    City Number: 688; City Name: anuradhapura; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=anuradhapura
+    City Number: 689; City Name: port blair; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=port blair
+    City Number: 690; City Name: ron phibun; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ron phibun
+    City Number: 691; City Name: ca mau; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ca mau
+    City Number: 692; City Name: vung tau; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=vung tau
+    City Number: 693; City Name: balabac; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=balabac
+    City Number: 694; City Name: simbahan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=simbahan
+    City Number: 695; City Name: munai; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=munai
+    City Number: 696; City Name: kinablangan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kinablangan
+    City Number: 697; City Name: san jeronimo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=san jeronimo
+    City Number: 698; City Name: san jose; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=san jose
+    City Number: 699; City Name: san rafael del sur; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=san rafael del sur
+    City Number: 700; City Name: san isidro; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=san isidro
+    City Number: 701; City Name: portobelo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=portobelo
+    City Number: 702; City Name: san onofre; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=san onofre
+    City Number: 703; City Name: villa del rosario; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=villa del rosario
+    City Number: 704; City Name: tacarigua; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tacarigua
+    City Number: 705; City Name: cumana; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=cumana
+    City Number: 706; City Name: rio claro; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=rio claro
+    City Number: 707; City Name: iracoubo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=iracoubo
+    City Number: 708; City Name: oussouye; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=oussouye
+    City Number: 709; City Name: mamou; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mamou
+    City Number: 710; City Name: odienne; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=odienne
+    City Number: 711; City Name: gaoua; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=gaoua
+    City Number: 712; City Name: yendi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=yendi
+    City Number: 713; City Name: nikki; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nikki
+    City Number: 714; City Name: numan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=numan
+    City Number: 715; City Name: lai; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lai
+    City Number: 716; City Name: am timan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=am timan
+    City Number: 717; City Name: birao; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=birao
+    City Number: 718; City Name: abomsa; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=abomsa
+    City Number: 719; City Name: valvedditturai; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=valvedditturai
+    City Number: 720; City Name: trincomalee; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=trincomalee
+    City Number: 721; City Name: ranong; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ranong
+    City Number: 722; City Name: ko samui; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ko samui
+    City Number: 723; City Name: kampot; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kampot
+    City Number: 724; City Name: phan thiet; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=phan thiet
+    City Number: 725; City Name: panalingaan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=panalingaan
+    City Number: 726; City Name: osmena; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=osmena
+    City Number: 727; City Name: clarin; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=clarin
+    City Number: 728; City Name: union; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=union
+    City Number: 729; City Name: tecoanapa; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tecoanapa
+    City Number: 730; City Name: corinto; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=corinto
+    City Number: 731; City Name: bluefields; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bluefields
+    City Number: 732; City Name: san andres; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=san andres
+    City Number: 733; City Name: puerto colombia; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=puerto colombia
+    City Number: 734; City Name: uribia; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=uribia
+    City Number: 735; City Name: kralendijk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kralendijk
+    City Number: 736; City Name: la asuncion; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=la asuncion
+    City Number: 737; City Name: scarborough; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=scarborough
+    City Number: 738; City Name: oistins; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=oistins
+    City Number: 739; City Name: mana; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mana
+    City Number: 740; City Name: gunjur; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=gunjur
+    City Number: 741; City Name: canchungo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=canchungo
+    City Number: 742; City Name: mali; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mali
+    City Number: 743; City Name: kangaba; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kangaba
+    City Number: 744; City Name: koupela; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=koupela
+    City Number: 745; City Name: jega; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=jega
+    City Number: 746; City Name: malumfashi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=malumfashi
+    City Number: 747; City Name: damaturu; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=damaturu
+    City Number: 748; City Name: dourbali; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=dourbali
+    City Number: 749; City Name: marabba; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=marabba
+    City Number: 750; City Name: bahir dar; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bahir dar
+    City Number: 751; City Name: korem; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=korem
+    City Number: 752; City Name: salalah; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=salalah
+    City Number: 753; City Name: ponnampet; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ponnampet
+    City Number: 754; City Name: madras; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=madras
+    City Number: 755; City Name: kui buri; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kui buri
+    City Number: 756; City Name: da lat; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=da lat
+    City Number: 757; City Name: nha trang; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nha trang
+    City Number: 758; City Name: tagusao; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tagusao
+    City Number: 759; City Name: salvacion; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=salvacion
+    City Number: 760; City Name: cataingan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=cataingan
+    City Number: 761; City Name: sulangan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sulangan
+    City Number: 762; City Name: guerrero negro; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=guerrero negro
+    City Number: 763; City Name: la florida; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=la florida
+    City Number: 764; City Name: manaure; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=manaure
+    City Number: 765; City Name: rincon; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=rincon
+    City Number: 766; City Name: bathsheba; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bathsheba
+    City Number: 767; City Name: porto novo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=porto novo
+    City Number: 768; City Name: praia; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=praia
+    City Number: 769; City Name: dakar; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=dakar
+    City Number: 770; City Name: kahone; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kahone
+    City Number: 771; City Name: kayes; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kayes
+    City Number: 772; City Name: kolokani; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kolokani
+    City Number: 773; City Name: bandiagara; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bandiagara
+    City Number: 774; City Name: dori; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=dori
+    City Number: 775; City Name: dogondoutchi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=dogondoutchi
+    City Number: 776; City Name: tessaoua; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tessaoua
+    City Number: 777; City Name: maine-soroa; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=maine-soroa
+    City Number: 778; City Name: moussoro; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=moussoro
+    City Number: 779; City Name: oum hadjer; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=oum hadjer
+    City Number: 780; City Name: kutum; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kutum
+    City Number: 781; City Name: umm kaddadah; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=umm kaddadah
+    City Number: 782; City Name: doka; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=doka
+    City Number: 783; City Name: jiblah; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=jiblah
+    City Number: 784; City Name: kankon; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kankon
+    City Number: 785; City Name: channagiri; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=channagiri
+    City Number: 786; City Name: nayudupeta; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nayudupeta
+    City Number: 787; City Name: amalapuram; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=amalapuram
+    City Number: 788; City Name: dawei; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=dawei
+    City Number: 789; City Name: bang len; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bang len
+    City Number: 790; City Name: cabra; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=cabra
+    City Number: 791; City Name: caramoran; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=caramoran
+    City Number: 792; City Name: alugan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=alugan
+    City Number: 793; City Name: san policarpo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=san policarpo
+    City Number: 794; City Name: ewa beach; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ewa beach
+    City Number: 795; City Name: la orilla; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=la orilla
+    City Number: 796; City Name: la trinitaria; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=la trinitaria
+    City Number: 797; City Name: barra patuca; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=barra patuca
+    City Number: 798; City Name: black river; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=black river
+    City Number: 799; City Name: morant bay; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=morant bay
+    City Number: 800; City Name: guanica; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=guanica
+    City Number: 801; City Name: middle island; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=middle island
+    City Number: 802; City Name: saint-francois; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=saint-francois
+    City Number: 803; City Name: ponta do sol; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ponta do sol
+    City Number: 804; City Name: ribeira brava; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ribeira brava
+    City Number: 805; City Name: louga; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=louga
+    City Number: 806; City Name: goundam; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=goundam
+    City Number: 807; City Name: gao; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=gao
+    City Number: 808; City Name: tahoua; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tahoua
+    City Number: 809; City Name: agadez; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=agadez
+    City Number: 810; City Name: goure; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=goure
+    City Number: 811; City Name: mao; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mao
+    City Number: 812; City Name: biltine; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=biltine
+    City Number: 813; City Name: wagar; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=wagar
+    City Number: 814; City Name: sayyan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sayyan
+    City Number: 815; City Name: porbandar; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=porbandar
+    City Number: 816; City Name: ratnagiri; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ratnagiri
+    City Number: 817; City Name: hungund; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=hungund
+    City Number: 818; City Name: addanki; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=addanki
+    City Number: 819; City Name: yarada; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=yarada
+    City Number: 820; City Name: puri; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=puri
+    City Number: 821; City Name: pyapon; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pyapon
+    City Number: 822; City Name: khanu woralaksaburi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=khanu woralaksaburi
+    City Number: 823; City Name: selaphum; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=selaphum
+    City Number: 824; City Name: wanning; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=wanning
+    City Number: 825; City Name: aloleng; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=aloleng
+    City Number: 826; City Name: paitan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=paitan
+    City Number: 827; City Name: dicabisagan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=dicabisagan
+    City Number: 828; City Name: gigmoto; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=gigmoto
+    City Number: 829; City Name: lompoc; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lompoc
+    City Number: 830; City Name: tomatlan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tomatlan
+    City Number: 831; City Name: loma bonita; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=loma bonita
+    City Number: 832; City Name: jonuta; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=jonuta
+    City Number: 833; City Name: bodden town; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bodden town
+    City Number: 834; City Name: road town; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=road town
+    City Number: 835; City Name: codrington; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=codrington
+    City Number: 836; City Name: pombas; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pombas
+    City Number: 837; City Name: santa maria; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=santa maria
+    City Number: 838; City Name: nouakchott; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nouakchott
+    City Number: 839; City Name: araouane; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=araouane
+    City Number: 840; City Name: kidal; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kidal
+    City Number: 841; City Name: arlit; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=arlit
+    City Number: 842; City Name: bilma; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bilma
+    City Number: 843; City Name: marawi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=marawi
+    City Number: 844; City Name: najran; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=najran
+    City Number: 845; City Name: sur; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sur
+    City Number: 846; City Name: veraval; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=veraval
+    City Number: 847; City Name: srivardhan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=srivardhan
+    City Number: 848; City Name: tuljapur; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tuljapur
+    City Number: 849; City Name: mahbubabad; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mahbubabad
+    City Number: 850; City Name: srikakulam; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=srikakulam
+    City Number: 851; City Name: den chai; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=den chai
+    City Number: 852; City Name: seka; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=seka
+    City Number: 853; City Name: dong hoi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=dong hoi
+    City Number: 854; City Name: catuday; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=catuday
+    City Number: 855; City Name: sinait; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sinait
+    City Number: 856; City Name: pandan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pandan
+    City Number: 857; City Name: kihei; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kihei
+    City Number: 858; City Name: san quintin; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=san quintin
+    City Number: 859; City Name: juchitlan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=juchitlan
+    City Number: 860; City Name: temascalcingo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=temascalcingo
+    City Number: 861; City Name: sabancuy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sabancuy
+    City Number: 862; City Name: felipe carrillo puerto; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=felipe carrillo puerto
+    City Number: 863; City Name: santa fe; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=santa fe
+    City Number: 864; City Name: el cobre; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=el cobre
+    City Number: 865; City Name: cap-haitien; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=cap-haitien
+    City Number: 866; City Name: nouadhibou; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nouadhibou
+    City Number: 867; City Name: atar; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=atar
+    City Number: 868; City Name: tessalit; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tessalit
+    City Number: 869; City Name: mecca; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mecca
+    City Number: 870; City Name: abha; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=abha
+    City Number: 871; City Name: nizwa; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nizwa
+    City Number: 872; City Name: chinchani; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=chinchani
+    City Number: 873; City Name: deulgaon raja; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=deulgaon raja
+    City Number: 874; City Name: mul; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mul
+    City Number: 875; City Name: pyinmana; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pyinmana
+    City Number: 876; City Name: chiang rai; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=chiang rai
+    City Number: 877; City Name: xam nua; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=xam nua
+    City Number: 878; City Name: qiongshan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=qiongshan
+    City Number: 879; City Name: jieshi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=jieshi
+    City Number: 880; City Name: davila; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=davila
+    City Number: 881; City Name: basco; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=basco
+    City Number: 882; City Name: hirara; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=hirara
+    City Number: 883; City Name: nishihara; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nishihara
+    City Number: 884; City Name: naze; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=naze
+    City Number: 885; City Name: shimoda; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=shimoda
+    City Number: 886; City Name: katsuura; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=katsuura
+    City Number: 887; City Name: kahului; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kahului
+    City Number: 888; City Name: mazatlan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mazatlan
+    City Number: 889; City Name: villa guerrero; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=villa guerrero
+    City Number: 890; City Name: tamiahua; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tamiahua
+    City Number: 891; City Name: celestun; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=celestun
+    City Number: 892; City Name: panaba; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=panaba
+    City Number: 893; City Name: guane; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=guane
+    City Number: 894; City Name: manicaragua; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=manicaragua
+    City Number: 895; City Name: gibara; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=gibara
+    City Number: 896; City Name: taoudenni; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=taoudenni
+    City Number: 897; City Name: aswan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=aswan
+    City Number: 898; City Name: sawakin; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sawakin
+    City Number: 899; City Name: riyadh; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=riyadh
+    City Number: 900; City Name: ormara; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ormara
+    City Number: 901; City Name: dwarka; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=dwarka
+    City Number: 902; City Name: dhola; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=dhola
+    City Number: 903; City Name: bhikangaon; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bhikangaon
+    City Number: 904; City Name: waraseoni; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=waraseoni
+    City Number: 905; City Name: sundargarh; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sundargarh
+    City Number: 906; City Name: haldia; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=haldia
+    City Number: 907; City Name: bandarban; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bandarban
+    City Number: 908; City Name: mandalay; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mandalay
+    City Number: 909; City Name: lao cai; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lao cai
+    City Number: 910; City Name: qinzhou; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=qinzhou
+    City Number: 911; City Name: tangping; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tangping
+    City Number: 912; City Name: ishigaki; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ishigaki
+    City Number: 913; City Name: tateyama; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tateyama
+    City Number: 914; City Name: hasaki; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=hasaki
+    City Number: 915; City Name: kailua; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kailua
+    City Number: 916; City Name: eldorado; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=eldorado
+    City Number: 917; City Name: vicente guerrero; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=vicente guerrero
+    City Number: 918; City Name: doctor arroyo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=doctor arroyo
+    City Number: 919; City Name: nuevo progreso; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nuevo progreso
+    City Number: 920; City Name: bahia honda; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bahia honda
+    City Number: 921; City Name: corralillo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=corralillo
+    City Number: 922; City Name: rock sound; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=rock sound
+    City Number: 923; City Name: cockburn town; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=cockburn town
+    City Number: 924; City Name: the valley; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=the valley
+    City Number: 925; City Name: adrar; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=adrar
+    City Number: 926; City Name: tahta; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tahta
+    City Number: 927; City Name: umm lajj; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=umm lajj
+    City Number: 928; City Name: buraydah; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=buraydah
+    City Number: 929; City Name: doha; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=doha
+    City Number: 930; City Name: dubai; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=dubai
+    City Number: 931; City Name: jati; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=jati
+    City Number: 932; City Name: patan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=patan
+    City Number: 933; City Name: susner; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=susner
+    City Number: 934; City Name: pawai; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pawai
+    City Number: 935; City Name: daltenganj; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=daltenganj
+    City Number: 936; City Name: kandi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kandi
+    City Number: 937; City Name: kamalpur; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kamalpur
+    City Number: 938; City Name: simao; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=simao
+    City Number: 939; City Name: zhongshu; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=zhongshu
+    City Number: 940; City Name: huaicheng; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=huaicheng
+    City Number: 941; City Name: rongcheng; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=rongcheng
+    City Number: 942; City Name: itoman; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=itoman
+    City Number: 943; City Name: gushikawa; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=gushikawa
+    City Number: 944; City Name: shingu; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=shingu
+    City Number: 945; City Name: ahuimanu; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ahuimanu
+    City Number: 946; City Name: pacific grove; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pacific grove
+    City Number: 947; City Name: loreto; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=loreto
+    City Number: 948; City Name: mapimi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mapimi
+    City Number: 949; City Name: marin; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=marin
+    City Number: 950; City Name: brownsville; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=brownsville
+    City Number: 951; City Name: morgan city; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=morgan city
+    City Number: 952; City Name: estelle; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=estelle
+    City Number: 953; City Name: south venice; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=south venice
+    City Number: 954; City Name: aventura; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=aventura
+    City Number: 955; City Name: dunmore town; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=dunmore town
+    City Number: 956; City Name: hamilton; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=hamilton
+    City Number: 957; City Name: ribeira grande; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ribeira grande
+    City Number: 958; City Name: los llanos de aridane; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=los llanos de aridane
+    City Number: 959; City Name: santa lucia; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=santa lucia
+    City Number: 960; City Name: puerto del rosario; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=puerto del rosario
+    City Number: 961; City Name: tiznit; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tiznit
+    City Number: 962; City Name: awbari; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=awbari
+    City Number: 963; City Name: sabha; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sabha
+    City Number: 964; City Name: awjilah; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=awjilah
+    City Number: 965; City Name: abnub; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=abnub
+    City Number: 966; City Name: khor; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=khor
+    City Number: 967; City Name: sharjah; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sharjah
+    City Number: 968; City Name: pasni; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pasni
+    City Number: 969; City Name: sann; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sann
+    City Number: 970; City Name: balotra; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=balotra
+    City Number: 971; City Name: tonk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tonk
+    City Number: 972; City Name: kurara; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kurara
+    City Number: 973; City Name: sikandarpur; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sikandarpur
+    City Number: 974; City Name: kishanganj; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kishanganj
+    City Number: 975; City Name: nongpoh; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nongpoh
+    City Number: 976; City Name: khonsa; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=khonsa
+    City Number: 977; City Name: dali; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=dali
+    City Number: 978; City Name: xiaoweizhai; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=xiaoweizhai
+    City Number: 979; City Name: ganzhou; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ganzhou
+    City Number: 980; City Name: santa rosalia; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=santa rosalia
+    City Number: 981; City Name: creel; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=creel
+    City Number: 982; City Name: camargo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=camargo
+    City Number: 983; City Name: nuevo laredo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nuevo laredo
+    City Number: 984; City Name: port lavaca; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=port lavaca
+    City Number: 985; City Name: pascagoula; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pascagoula
+    City Number: 986; City Name: clearwater; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=clearwater
+    City Number: 987; City Name: sebastian; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sebastian
+    City Number: 988; City Name: marsh harbour; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=marsh harbour
+    City Number: 989; City Name: saint george; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=saint george
+    City Number: 990; City Name: ponta delgada; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ponta delgada
+    City Number: 991; City Name: galdar; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=galdar
+    City Number: 992; City Name: arrecife; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=arrecife
+    City Number: 993; City Name: hun; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=hun
+    City Number: 994; City Name: matay; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=matay
+    City Number: 995; City Name: tabuk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tabuk
+    City Number: 996; City Name: bayan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bayan
+    City Number: 997; City Name: qeshm; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=qeshm
+    City Number: 998; City Name: iranshahr; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=iranshahr
+    City Number: 999; City Name: dalbandin; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=dalbandin
+    City Number: 1000; City Name: garhi khairo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=garhi khairo
+    City Number: 1001; City Name: phalodi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=phalodi
+    City Number: 1002; City Name: narnaul; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=narnaul
+    City Number: 1003; City Name: pawayan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pawayan
+    City Number: 1004; City Name: waling; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=waling
+    City Number: 1005; City Name: mangan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mangan
+    City Number: 1006; City Name: tawang; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tawang
+    City Number: 1007; City Name: tezu; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tezu
+    City Number: 1008; City Name: panzhihua; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=panzhihua
+    City Number: 1009; City Name: zhaotong; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=zhaotong
+    City Number: 1010; City Name: loudi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=loudi
+    City Number: 1011; City Name: lishui; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lishui
+    City Number: 1012; City Name: shenjiamen; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=shenjiamen
+    City Number: 1013; City Name: nago; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nago
+    City Number: 1014; City Name: muroto; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=muroto
+    City Number: 1015; City Name: half moon bay; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=half moon bay
+    City Number: 1016; City Name: rosarito; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=rosarito
+    City Number: 1017; City Name: pitiquito; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pitiquito
+    City Number: 1018; City Name: benito juarez; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=benito juarez
+    City Number: 1019; City Name: ojinaga; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ojinaga
+    City Number: 1020; City Name: uvalde; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=uvalde
+    City Number: 1021; City Name: katy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=katy
+    City Number: 1022; City Name: abbeville; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=abbeville
+    City Number: 1023; City Name: fairhope; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=fairhope
+    City Number: 1024; City Name: tallahassee; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tallahassee
+    City Number: 1025; City Name: ormond beach; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ormond beach
+    City Number: 1026; City Name: santa cruz de tenerife; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=santa cruz de tenerife
+    City Number: 1027; City Name: teguise; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=teguise
+    City Number: 1028; City Name: mizdah; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mizdah
+    City Number: 1029; City Name: waddan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=waddan
+    City Number: 1030; City Name: ajdabiya; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ajdabiya
+    City Number: 1031; City Name: bardiyah; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bardiyah
+    City Number: 1032; City Name: marsa matruh; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=marsa matruh
+    City Number: 1033; City Name: suez; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=suez
+    City Number: 1034; City Name: baghdad; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=baghdad
+    City Number: 1035; City Name: abadan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=abadan
+    City Number: 1036; City Name: kazerun; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kazerun
+    City Number: 1037; City Name: rafsanjan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=rafsanjan
+    City Number: 1038; City Name: zabol; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=zabol
+    City Number: 1039; City Name: harnai; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=harnai
+    City Number: 1040; City Name: mailsi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mailsi
+    City Number: 1041; City Name: dirba; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=dirba
+    City Number: 1042; City Name: bageshwar; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bageshwar
+    City Number: 1043; City Name: pokhara; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pokhara
+    City Number: 1044; City Name: lasa; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lasa
+    City Number: 1045; City Name: pasighat; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pasighat
+    City Number: 1046; City Name: leshan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=leshan
+    City Number: 1047; City Name: fuling; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=fuling
+    City Number: 1048; City Name: nanhai; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nanhai
+    City Number: 1049; City Name: huangmei; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=huangmei
+    City Number: 1050; City Name: fuyang; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=fuyang
+    City Number: 1051; City Name: kushima; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kushima
+    City Number: 1052; City Name: severo-kurilsk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=severo-kurilsk
+    City Number: 1053; City Name: fortuna; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=fortuna
+    City Number: 1054; City Name: port hueneme; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=port hueneme
+    City Number: 1055; City Name: ensenada; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ensenada
+    City Number: 1056; City Name: deming; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=deming
+    City Number: 1057; City Name: carlsbad; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=carlsbad
+    City Number: 1058; City Name: abilene; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=abilene
+    City Number: 1059; City Name: athens; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=athens
+    City Number: 1060; City Name: monroe; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=monroe
+    City Number: 1061; City Name: meridian; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=meridian
+    City Number: 1062; City Name: cordele; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=cordele
+    City Number: 1063; City Name: charleston; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=charleston
+    City Number: 1064; City Name: wilmington; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=wilmington
+    City Number: 1065; City Name: havelock; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=havelock
+    City Number: 1066; City Name: torbay; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=torbay
+    City Number: 1067; City Name: vila franca do campo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=vila franca do campo
+    City Number: 1068; City Name: machico; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=machico
+    City Number: 1069; City Name: marrakesh; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=marrakesh
+    City Number: 1070; City Name: misratah; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=misratah
+    City Number: 1071; City Name: benghazi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=benghazi
+    City Number: 1072; City Name: damietta; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=damietta
+    City Number: 1073; City Name: jawa; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=jawa
+    City Number: 1074; City Name: turayf; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=turayf
+    City Number: 1075; City Name: shush; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=shush
+    City Number: 1076; City Name: shahreza; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=shahreza
+    City Number: 1077; City Name: bafq; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bafq
+    City Number: 1078; City Name: birjand; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=birjand
+    City Number: 1079; City Name: sharan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sharan
+    City Number: 1080; City Name: mitha tiwana; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mitha tiwana
+    City Number: 1081; City Name: talwara; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=talwara
+    City Number: 1082; City Name: jumla; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=jumla
+    City Number: 1083; City Name: jiangyou; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=jiangyou
+    City Number: 1084; City Name: gushi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=gushi
+    City Number: 1085; City Name: taixing; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=taixing
+    City Number: 1086; City Name: huilong; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=huilong
+    City Number: 1087; City Name: fukue; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=fukue
+    City Number: 1088; City Name: pacifica; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pacifica
+    City Number: 1089; City Name: isla vista; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=isla vista
+    City Number: 1090; City Name: twentynine palms; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=twentynine palms
+    City Number: 1091; City Name: paradise valley; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=paradise valley
+    City Number: 1092; City Name: socorro; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=socorro
+    City Number: 1093; City Name: portales; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=portales
+    City Number: 1094; City Name: vernon; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=vernon
+    City Number: 1095; City Name: durant; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=durant
+    City Number: 1096; City Name: pine bluff; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pine bluff
+    City Number: 1097; City Name: columbus; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=columbus
+    City Number: 1098; City Name: lawrenceville; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lawrenceville
+    City Number: 1099; City Name: florence; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=florence
+    City Number: 1100; City Name: elizabeth city; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=elizabeth city
+    City Number: 1101; City Name: camacha; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=camacha
+    City Number: 1102; City Name: casablanca; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=casablanca
+    City Number: 1103; City Name: karpathos; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=karpathos
+    City Number: 1104; City Name: balad; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=balad
+    City Number: 1105; City Name: kashan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kashan
+    City Number: 1106; City Name: tabas; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tabas
+    City Number: 1107; City Name: taybad; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=taybad
+    City Number: 1108; City Name: nowshera; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nowshera
+    City Number: 1109; City Name: kargil; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kargil
+    City Number: 1110; City Name: leh; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=leh
+    City Number: 1111; City Name: along; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=along
+    City Number: 1112; City Name: xining; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=xining
+    City Number: 1113; City Name: linxia; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=linxia
+    City Number: 1114; City Name: yuxia; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=yuxia
+    City Number: 1115; City Name: yima; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=yima
+    City Number: 1116; City Name: bozhou; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bozhou
+    City Number: 1117; City Name: dongkan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=dongkan
+    City Number: 1118; City Name: hikari; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=hikari
+    City Number: 1119; City Name: ukiah; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ukiah
+    City Number: 1120; City Name: avenal; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=avenal
+    City Number: 1121; City Name: pahrump; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pahrump
+    City Number: 1122; City Name: flagstaff; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=flagstaff
+    City Number: 1123; City Name: bloomfield; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bloomfield
+    City Number: 1124; City Name: tucumcari; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tucumcari
+    City Number: 1125; City Name: woodward; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=woodward
+    City Number: 1126; City Name: jenks; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=jenks
+    City Number: 1127; City Name: batesville; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=batesville
+    City Number: 1128; City Name: paris; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=paris
+    City Number: 1129; City Name: knoxville; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=knoxville
+    City Number: 1130; City Name: high point; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=high point
+    City Number: 1131; City Name: virginia beach; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=virginia beach
+    City Number: 1132; City Name: saint-pierre; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=saint-pierre
+    City Number: 1133; City Name: horta; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=horta
+    City Number: 1134; City Name: aljezur; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=aljezur
+    City Number: 1135; City Name: faro; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=faro
+    City Number: 1136; City Name: torrox; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=torrox
+    City Number: 1137; City Name: tazmalt; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tazmalt
+    City Number: 1138; City Name: manzil salim; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=manzil salim
+    City Number: 1139; City Name: pachino; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pachino
+    City Number: 1140; City Name: methoni; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=methoni
+    City Number: 1141; City Name: ayia marina; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ayia marina
+    City Number: 1142; City Name: lardos; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lardos
+    City Number: 1143; City Name: alanya; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=alanya
+    City Number: 1144; City Name: viransehir; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=viransehir
+    City Number: 1145; City Name: bijar; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bijar
+    City Number: 1146; City Name: damavand; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=damavand
+    City Number: 1147; City Name: shahrud; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=shahrud
+    City Number: 1148; City Name: mashhad; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mashhad
+    City Number: 1149; City Name: chitral; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=chitral
+    City Number: 1150; City Name: korla; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=korla
+    City Number: 1151; City Name: yumen; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=yumen
+    City Number: 1152; City Name: lanzhou; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lanzhou
+    City Number: 1153; City Name: pingliang; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pingliang
+    City Number: 1154; City Name: linfen; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=linfen
+    City Number: 1155; City Name: yanggu; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=yanggu
+    City Number: 1156; City Name: jiaonan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=jiaonan
+    City Number: 1157; City Name: yatou; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=yatou
+    City Number: 1158; City Name: seoul; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=seoul
+    City Number: 1159; City Name: oda; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=oda
+    City Number: 1160; City Name: sabae; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sabae
+    City Number: 1161; City Name: mitsukaido; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mitsukaido
+    City Number: 1162; City Name: kamaishi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kamaishi
+    City Number: 1163; City Name: nemuro; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nemuro
+    City Number: 1164; City Name: healdsburg; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=healdsburg
+    City Number: 1165; City Name: merced; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=merced
+    City Number: 1166; City Name: cedar city; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=cedar city
+    City Number: 1167; City Name: montrose; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=montrose
+    City Number: 1168; City Name: pueblo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pueblo
+    City Number: 1169; City Name: dodge city; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=dodge city
+    City Number: 1170; City Name: emporia; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=emporia
+    City Number: 1171; City Name: rolla; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=rolla
+    City Number: 1172; City Name: henderson; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=henderson
+    City Number: 1173; City Name: winchester; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=winchester
+    City Number: 1174; City Name: hollins; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=hollins
+    City Number: 1175; City Name: lexington park; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lexington park
+    City Number: 1176; City Name: brigantine; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=brigantine
+    City Number: 1177; City Name: nantucket; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nantucket
+    City Number: 1178; City Name: bay roberts; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bay roberts
+    City Number: 1179; City Name: cascais; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=cascais
+    City Number: 1180; City Name: ferreira do alentejo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ferreira do alentejo
+    City Number: 1181; City Name: andujar; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=andujar
+    City Number: 1182; City Name: benidorm; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=benidorm
+    City Number: 1183; City Name: tigzirt; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tigzirt
+    City Number: 1184; City Name: carbonia; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=carbonia
+    City Number: 1185; City Name: marsala; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=marsala
+    City Number: 1186; City Name: melito di porto salvo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=melito di porto salvo
+    City Number: 1187; City Name: lixourion; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lixourion
+    City Number: 1188; City Name: rafina; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=rafina
+    City Number: 1189; City Name: beysehir; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=beysehir
+    City Number: 1190; City Name: goksun; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=goksun
+    City Number: 1191; City Name: ergani; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ergani
+    City Number: 1192; City Name: hakkari; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=hakkari
+    City Number: 1193; City Name: ardabil; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ardabil
+    City Number: 1194; City Name: fereydun kenar; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=fereydun kenar
+    City Number: 1195; City Name: kalaleh; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kalaleh
+    City Number: 1196; City Name: kaka; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kaka
+    City Number: 1197; City Name: sayat; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sayat
+    City Number: 1198; City Name: shache; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=shache
+    City Number: 1199; City Name: hami; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=hami
+    City Number: 1200; City Name: zhangye; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=zhangye
+    City Number: 1201; City Name: wuwei; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=wuwei
+    City Number: 1202; City Name: yinchuan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=yinchuan
+    City Number: 1203; City Name: taiyuan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=taiyuan
+    City Number: 1204; City Name: hengshui; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=hengshui
+    City Number: 1205; City Name: longkou; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=longkou
+    City Number: 1206; City Name: izumo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=izumo
+    City Number: 1207; City Name: wajima; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=wajima
+    City Number: 1208; City Name: nagai; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nagai
+    City Number: 1209; City Name: provideniya; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=provideniya
+    City Number: 1210; City Name: kodiak; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kodiak
+    City Number: 1211; City Name: sitka; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sitka
+    City Number: 1212; City Name: sun valley; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sun valley
+    City Number: 1213; City Name: elko; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=elko
+    City Number: 1214; City Name: payson; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=payson
+    City Number: 1215; City Name: craig; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=craig
+    City Number: 1216; City Name: fort morgan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=fort morgan
+    City Number: 1217; City Name: lexington; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lexington
+    City Number: 1218; City Name: beatrice; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=beatrice
+    City Number: 1219; City Name: quincy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=quincy
+    City Number: 1220; City Name: urbana; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=urbana
+    City Number: 1221; City Name: tipp city; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tipp city
+    City Number: 1222; City Name: uniontown; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=uniontown
+    City Number: 1223; City Name: coatesville; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=coatesville
+    City Number: 1224; City Name: mastic beach; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mastic beach
+    City Number: 1225; City Name: shelburne; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=shelburne
+    City Number: 1226; City Name: port hawkesbury; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=port hawkesbury
+    City Number: 1227; City Name: lagoa; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lagoa
+    City Number: 1228; City Name: peniche; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=peniche
+    City Number: 1229; City Name: castanheira de pera; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=castanheira de pera
+    City Number: 1230; City Name: toledo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=toledo
+    City Number: 1231; City Name: burriana; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=burriana
+    City Number: 1232; City Name: cabras; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=cabras
+    City Number: 1233; City Name: anzio; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=anzio
+    City Number: 1234; City Name: lauria; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lauria
+    City Number: 1235; City Name: delvine; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=delvine
+    City Number: 1236; City Name: susurluk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=susurluk
+    City Number: 1237; City Name: gerede; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=gerede
+    City Number: 1238; City Name: zile; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=zile
+    City Number: 1239; City Name: bayburt; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bayburt
+    City Number: 1240; City Name: janfida; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=janfida
+    City Number: 1241; City Name: gazanjyk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=gazanjyk
+    City Number: 1242; City Name: hazorasp; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=hazorasp
+    City Number: 1243; City Name: zomin; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=zomin
+    City Number: 1244; City Name: kashi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kashi
+    City Number: 1245; City Name: aksu; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=aksu
+    City Number: 1246; City Name: jinchang; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=jinchang
+    City Number: 1247; City Name: hohhot; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=hohhot
+    City Number: 1248; City Name: mentougou; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mentougou
+    City Number: 1249; City Name: qinhuangdao; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=qinhuangdao
+    City Number: 1250; City Name: dandong; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=dandong
+    City Number: 1251; City Name: linjiang; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=linjiang
+    City Number: 1252; City Name: tenno; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tenno
+    City Number: 1253; City Name: miyako; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=miyako
+    City Number: 1254; City Name: bethel; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bethel
+    City Number: 1255; City Name: port hardy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=port hardy
+    City Number: 1256; City Name: north bend; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=north bend
+    City Number: 1257; City Name: coos bay; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=coos bay
+    City Number: 1258; City Name: eureka; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=eureka
+    City Number: 1259; City Name: grants pass; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=grants pass
+    City Number: 1260; City Name: susanville; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=susanville
+    City Number: 1261; City Name: mountain home; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mountain home
+    City Number: 1262; City Name: preston; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=preston
+    City Number: 1263; City Name: rawlins; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=rawlins
+    City Number: 1264; City Name: torrington; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=torrington
+    City Number: 1265; City Name: north platte; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=north platte
+    City Number: 1266; City Name: south sioux city; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=south sioux city
+    City Number: 1267; City Name: cedar rapids; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=cedar rapids
+    City Number: 1268; City Name: elk grove village; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=elk grove village
+    City Number: 1269; City Name: adrian; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=adrian
+    City Number: 1270; City Name: erie; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=erie
+    City Number: 1271; City Name: endicott; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=endicott
+    City Number: 1272; City Name: southbridge; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=southbridge
+    City Number: 1273; City Name: brewster; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=brewster
+    City Number: 1274; City Name: liverpool; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=liverpool
+    City Number: 1275; City Name: praia da vitoria; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=praia da vitoria
+    City Number: 1276; City Name: muros; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=muros
+    City Number: 1277; City Name: real; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=real
+    City Number: 1278; City Name: aranda de duero; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=aranda de duero
+    City Number: 1279; City Name: barbastro; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=barbastro
+    City Number: 1280; City Name: palafrugell; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=palafrugell
+    City Number: 1281; City Name: ajaccio; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ajaccio
+    City Number: 1282; City Name: cerveteri; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=cerveteri
+    City Number: 1283; City Name: vieste; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=vieste
+    City Number: 1284; City Name: fushe-arrez; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=fushe-arrez
+    City Number: 1285; City Name: velingrad; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=velingrad
+    City Number: 1286; City Name: zonguldak; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=zonguldak
+    City Number: 1287; City Name: bafra; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bafra
+    City Number: 1288; City Name: trabzon; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=trabzon
+    City Number: 1289; City Name: gori; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=gori
+    City Number: 1290; City Name: khuchni; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=khuchni
+    City Number: 1291; City Name: kuryk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kuryk
+    City Number: 1292; City Name: gazli; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=gazli
+    City Number: 1293; City Name: talas; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=talas
+    City Number: 1294; City Name: hovd; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=hovd
+    City Number: 1295; City Name: zhangjiakou; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=zhangjiakou
+    City Number: 1296; City Name: chaoyang; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=chaoyang
+    City Number: 1297; City Name: fushun; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=fushun
+    City Number: 1298; City Name: songjianghe; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=songjianghe
+    City Number: 1299; City Name: olga; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=olga
+    City Number: 1300; City Name: kamiiso; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kamiiso
+    City Number: 1301; City Name: kushiro; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kushiro
+    City Number: 1302; City Name: redmond; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=redmond
+    City Number: 1303; City Name: garden city; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=garden city
+    City Number: 1304; City Name: rexburg; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=rexburg
+    City Number: 1305; City Name: worland; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=worland
+    City Number: 1306; City Name: spearfish; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=spearfish
+    City Number: 1307; City Name: pierre; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pierre
+    City Number: 1308; City Name: marshall; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=marshall
+    City Number: 1309; City Name: winona; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=winona
+    City Number: 1310; City Name: manitowoc; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=manitowoc
+    City Number: 1311; City Name: bay city; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bay city
+    City Number: 1312; City Name: orangeville; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=orangeville
+    City Number: 1313; City Name: watertown; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=watertown
+    City Number: 1314; City Name: haverhill; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=haverhill
+    City Number: 1315; City Name: bar harbor; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bar harbor
+    City Number: 1316; City Name: lunenburg; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lunenburg
+    City Number: 1317; City Name: naron; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=naron
+    City Number: 1318; City Name: santander; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=santander
+    City Number: 1319; City Name: tonneins; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tonneins
+    City Number: 1320; City Name: ales; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ales
+    City Number: 1321; City Name: imperia; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=imperia
+    City Number: 1322; City Name: bertinoro; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bertinoro
+    City Number: 1323; City Name: knin; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=knin
+    City Number: 1324; City Name: kosjeric; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kosjeric
+    City Number: 1325; City Name: marsani; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=marsani
+    City Number: 1326; City Name: dumbraveni; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=dumbraveni
+    City Number: 1327; City Name: zaozerne; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=zaozerne
+    City Number: 1328; City Name: ordzhonikidze; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ordzhonikidze
+    City Number: 1329; City Name: kamennomostskiy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kamennomostskiy
+    City Number: 1330; City Name: sovetskaya; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sovetskaya
+    City Number: 1331; City Name: makhachkala; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=makhachkala
+    City Number: 1332; City Name: shetpe; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=shetpe
+    City Number: 1333; City Name: beyneu; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=beyneu
+    City Number: 1334; City Name: kentau; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kentau
+    City Number: 1335; City Name: mikhaylovka; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mikhaylovka
+    City Number: 1336; City Name: zharkent; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=zharkent
+    City Number: 1337; City Name: kuytun; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kuytun
+    City Number: 1338; City Name: mandalgovi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mandalgovi
+    City Number: 1339; City Name: mujiayingzi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mujiayingzi
+    City Number: 1340; City Name: chifeng; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=chifeng
+    City Number: 1341; City Name: zhengjiatun; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=zhengjiatun
+    City Number: 1342; City Name: huangnihe; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=huangnihe
+    City Number: 1343; City Name: vozdvizhenka; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=vozdvizhenka
+    City Number: 1344; City Name: rudnaya pristan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=rudnaya pristan
+    City Number: 1345; City Name: yoichi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=yoichi
+    City Number: 1346; City Name: bihoro; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bihoro
+    City Number: 1347; City Name: kurilsk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kurilsk
+    City Number: 1348; City Name: ucluelet; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ucluelet
+    City Number: 1349; City Name: astoria; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=astoria
+    City Number: 1350; City Name: grandview; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=grandview
+    City Number: 1351; City Name: lewiston; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lewiston
+    City Number: 1352; City Name: butte; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=butte
+    City Number: 1353; City Name: billings; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=billings
+    City Number: 1354; City Name: glendive; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=glendive
+    City Number: 1355; City Name: bismarck; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bismarck
+    City Number: 1356; City Name: fergus falls; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=fergus falls
+    City Number: 1357; City Name: superior; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=superior
+    City Number: 1358; City Name: marquette; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=marquette
+    City Number: 1359; City Name: thessalon; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=thessalon
+    City Number: 1360; City Name: maniwaki; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=maniwaki
+    City Number: 1361; City Name: houlton; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=houlton
+    City Number: 1362; City Name: amherst; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=amherst
+    City Number: 1363; City Name: carballo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=carballo
+    City Number: 1364; City Name: cervo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=cervo
+    City Number: 1365; City Name: ploemeur; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ploemeur
+    City Number: 1366; City Name: angouleme; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=angouleme
+    City Number: 1367; City Name: riorges; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=riorges
+    City Number: 1368; City Name: zermatt; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=zermatt
+    City Number: 1369; City Name: valdobbiadene; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=valdobbiadene
+    City Number: 1370; City Name: zagreb; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=zagreb
+    City Number: 1371; City Name: kanjiza; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kanjiza
+    City Number: 1372; City Name: suceveni; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=suceveni
+    City Number: 1373; City Name: bekhtery; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bekhtery
+    City Number: 1374; City Name: novyy svit; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=novyy svit
+    City Number: 1375; City Name: novoleushkovskaya; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=novoleushkovskaya
+    City Number: 1376; City Name: arshan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=arshan
+    City Number: 1377; City Name: kamyzyak; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kamyzyak
+    City Number: 1378; City Name: sarkand; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sarkand
+    City Number: 1379; City Name: altay; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=altay
+    City Number: 1380; City Name: darhan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=darhan
+    City Number: 1381; City Name: baruun-urt; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=baruun-urt
+    City Number: 1382; City Name: tailai; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tailai
+    City Number: 1383; City Name: binzhou; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=binzhou
+    City Number: 1384; City Name: baoqing; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=baoqing
+    City Number: 1385; City Name: vostok; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=vostok
+    City Number: 1386; City Name: svetlaya; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=svetlaya
+    City Number: 1387; City Name: petropavlovsk-kamchatskiy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=petropavlovsk-kamchatskiy
+    City Number: 1388; City Name: prince rupert; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=prince rupert
+    City Number: 1389; City Name: sooke; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sooke
+    City Number: 1390; City Name: east wenatchee bench; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=east wenatchee bench
+    City Number: 1391; City Name: sandpoint; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sandpoint
+    City Number: 1392; City Name: great falls; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=great falls
+    City Number: 1393; City Name: shaunavon; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=shaunavon
+    City Number: 1394; City Name: sidney; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sidney
+    City Number: 1395; City Name: devils lake; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=devils lake
+    City Number: 1396; City Name: grand forks; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=grand forks
+    City Number: 1397; City Name: atikokan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=atikokan
+    City Number: 1398; City Name: terrace bay; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=terrace bay
+    City Number: 1399; City Name: chapleau; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=chapleau
+    City Number: 1400; City Name: kirkland lake; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kirkland lake
+    City Number: 1401; City Name: senneterre; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=senneterre
+    City Number: 1402; City Name: price; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=price
+    City Number: 1403; City Name: channel-port aux basques; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=channel-port aux basques
+    City Number: 1404; City Name: harbour breton; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=harbour breton
+    City Number: 1405; City Name: dingle; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=dingle
+    City Number: 1406; City Name: bantry; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bantry
+    City Number: 1407; City Name: penzance; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=penzance
+    City Number: 1408; City Name: quimper; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=quimper
+    City Number: 1409; City Name: allonnes; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=allonnes
+    City Number: 1410; City Name: saint-andre-les-vergers; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=saint-andre-les-vergers
+    City Number: 1411; City Name: kirchzarten; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kirchzarten
+    City Number: 1412; City Name: berndorf; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=berndorf
+    City Number: 1413; City Name: matranovak; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=matranovak
+    City Number: 1414; City Name: bocicoiu mare; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bocicoiu mare
+    City Number: 1415; City Name: drochia; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=drochia
+    City Number: 1416; City Name: kompaniyivka; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kompaniyivka
+    City Number: 1417; City Name: novomykolayivka; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=novomykolayivka
+    City Number: 1418; City Name: almaznyy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=almaznyy
+    City Number: 1419; City Name: oktyabrskiy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=oktyabrskiy
+    City Number: 1420; City Name: tambovka; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tambovka
+    City Number: 1421; City Name: shubarkuduk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=shubarkuduk
+    City Number: 1422; City Name: emba; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=emba
+    City Number: 1423; City Name: atasu; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=atasu
+    City Number: 1424; City Name: ayagoz; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ayagoz
+    City Number: 1425; City Name: kurchum; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kurchum
+    City Number: 1426; City Name: ulaangom; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ulaangom
+    City Number: 1427; City Name: erzin; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=erzin
+    City Number: 1428; City Name: moron; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=moron
+    City Number: 1429; City Name: bulgan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bulgan
+    City Number: 1430; City Name: ulaanbaatar; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ulaanbaatar
+    City Number: 1431; City Name: zabaykalsk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=zabaykalsk
+    City Number: 1432; City Name: hailar; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=hailar
+    City Number: 1433; City Name: gannan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=gannan
+    City Number: 1434; City Name: babstovo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=babstovo
+    City Number: 1435; City Name: mukhen; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mukhen
+    City Number: 1436; City Name: sovetskaya gavan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sovetskaya gavan
+    City Number: 1437; City Name: makarov; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=makarov
+    City Number: 1438; City Name: ketchikan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ketchikan
+    City Number: 1439; City Name: powell river; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=powell river
+    City Number: 1440; City Name: peachland; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=peachland
+    City Number: 1441; City Name: kimberley; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kimberley
+    City Number: 1442; City Name: taber; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=taber
+    City Number: 1443; City Name: swift current; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=swift current
+    City Number: 1444; City Name: weyburn; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=weyburn
+    City Number: 1445; City Name: brandon; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=brandon
+    City Number: 1446; City Name: pinawa; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pinawa
+    City Number: 1447; City Name: sioux lookout; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sioux lookout
+    City Number: 1448; City Name: hearst; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=hearst
+    City Number: 1449; City Name: cochrane; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=cochrane
+    City Number: 1450; City Name: chapais; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=chapais
+    City Number: 1451; City Name: baie-comeau; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=baie-comeau
+    City Number: 1452; City Name: havre-saint-pierre; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=havre-saint-pierre
+    City Number: 1453; City Name: saint-augustin; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=saint-augustin
+    City Number: 1454; City Name: springdale; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=springdale
+    City Number: 1455; City Name: bonavista; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bonavista
+    City Number: 1456; City Name: nanortalik; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nanortalik
+    City Number: 1457; City Name: kinsale; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kinsale
+    City Number: 1458; City Name: ivybridge; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ivybridge
+    City Number: 1459; City Name: fecamp; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=fecamp
+    City Number: 1460; City Name: fourmies; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=fourmies
+    City Number: 1461; City Name: geisenheim; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=geisenheim
+    City Number: 1462; City Name: wunsiedel; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=wunsiedel
+    City Number: 1463; City Name: holice; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=holice
+    City Number: 1464; City Name: wieliczka; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=wieliczka
+    City Number: 1465; City Name: zhovkva; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=zhovkva
+    City Number: 1466; City Name: chudniv; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=chudniv
+    City Number: 1467; City Name: drabiv; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=drabiv
+    City Number: 1468; City Name: peresichna; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=peresichna
+    City Number: 1469; City Name: mitrofanovka; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mitrofanovka
+    City Number: 1470; City Name: danilovka; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=danilovka
+    City Number: 1471; City Name: novouzensk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=novouzensk
+    City Number: 1472; City Name: dombarovskiy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=dombarovskiy
+    City Number: 1473; City Name: atbasar; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=atbasar
+    City Number: 1474; City Name: semey; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=semey
+    City Number: 1475; City Name: zyryanovsk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=zyryanovsk
+    City Number: 1476; City Name: aktash; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=aktash
+    City Number: 1477; City Name: kholtoson; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kholtoson
+    City Number: 1478; City Name: bichura; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bichura
+    City Number: 1479; City Name: kyra; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kyra
+    City Number: 1480; City Name: sherlovaya gora; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sherlovaya gora
+    City Number: 1481; City Name: alihe; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=alihe
+    City Number: 1482; City Name: tyrma; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tyrma
+    City Number: 1483; City Name: vysokogornyy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=vysokogornyy
+    City Number: 1484; City Name: poronaysk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=poronaysk
+    City Number: 1485; City Name: quesnel; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=quesnel
+    City Number: 1486; City Name: chase; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=chase
+    City Number: 1487; City Name: banff; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=banff
+    City Number: 1488; City Name: hanna; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=hanna
+    City Number: 1489; City Name: biggar; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=biggar
+    City Number: 1490; City Name: wadena; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=wadena
+    City Number: 1491; City Name: dauphin; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=dauphin
+    City Number: 1492; City Name: gimli; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=gimli
+    City Number: 1493; City Name: port-cartier; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=port-cartier
+    City Number: 1494; City Name: saint anthony; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=saint anthony
+    City Number: 1495; City Name: grindavik; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=grindavik
+    City Number: 1496; City Name: youghal; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=youghal
+    City Number: 1497; City Name: carmarthen; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=carmarthen
+    City Number: 1498; City Name: hertford; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=hertford
+    City Number: 1499; City Name: monster; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=monster
+    City Number: 1500; City Name: sassenberg; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sassenberg
+    City Number: 1501; City Name: zerbst; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=zerbst
+    City Number: 1502; City Name: wolsztyn; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=wolsztyn
+    City Number: 1503; City Name: lowicz; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lowicz
+    City Number: 1504; City Name: lyuban; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lyuban
+    City Number: 1505; City Name: shchors; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=shchors
+    City Number: 1506; City Name: fatezh; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=fatezh
+    City Number: 1507; City Name: verkhnyaya khava; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=verkhnyaya khava
+    City Number: 1508; City Name: rtishchevo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=rtishchevo
+    City Number: 1509; City Name: balakovo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=balakovo
+    City Number: 1510; City Name: kurmanayevka; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kurmanayevka
+    City Number: 1511; City Name: matveyevka; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=matveyevka
+    City Number: 1512; City Name: krasnoyarskiy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=krasnoyarskiy
+    City Number: 1513; City Name: stepnogorsk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=stepnogorsk
+    City Number: 1514; City Name: mikhaylovskoye; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mikhaylovskoye
+    City Number: 1515; City Name: petropavlovskoye; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=petropavlovskoye
+    City Number: 1516; City Name: tashtagol; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tashtagol
+    City Number: 1517; City Name: toora-khem; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=toora-khem
+    City Number: 1518; City Name: orlik; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=orlik
+    City Number: 1519; City Name: onokhoy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=onokhoy
+    City Number: 1520; City Name: mogzon; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mogzon
+    City Number: 1521; City Name: shilka; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=shilka
+    City Number: 1522; City Name: nerchinskiy zavod; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nerchinskiy zavod
+    City Number: 1523; City Name: tahe; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tahe
+    City Number: 1524; City Name: shimanovsk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=shimanovsk
+    City Number: 1525; City Name: berezovyy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=berezovyy
+    City Number: 1526; City Name: bogorodskoye; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bogorodskoye
+    City Number: 1527; City Name: egvekinot; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=egvekinot
+    City Number: 1528; City Name: palmer; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=palmer
+    City Number: 1529; City Name: kitimat; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kitimat
+    City Number: 1530; City Name: vanderhoof; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=vanderhoof
+    City Number: 1531; City Name: beaverlodge; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=beaverlodge
+    City Number: 1532; City Name: whitecourt; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=whitecourt
+    City Number: 1533; City Name: two hills; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=two hills
+    City Number: 1534; City Name: meadow lake; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=meadow lake
+    City Number: 1535; City Name: nipawin; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nipawin
+    City Number: 1536; City Name: the pas; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=the pas
+    City Number: 1537; City Name: thompson; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=thompson
+    City Number: 1538; City Name: sept-iles; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sept-iles
+    City Number: 1539; City Name: tasiilaq; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tasiilaq
+    City Number: 1540; City Name: vestmannaeyjar; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=vestmannaeyjar
+    City Number: 1541; City Name: boyle; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=boyle
+    City Number: 1542; City Name: whitehaven; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=whitehaven
+    City Number: 1543; City Name: bridlington; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bridlington
+    City Number: 1544; City Name: den helder; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=den helder
+    City Number: 1545; City Name: jever; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=jever
+    City Number: 1546; City Name: bad doberan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bad doberan
+    City Number: 1547; City Name: bialogard; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bialogard
+    City Number: 1548; City Name: morag; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=morag
+    City Number: 1549; City Name: druskininkai; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=druskininkai
+    City Number: 1550; City Name: minsk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=minsk
+    City Number: 1551; City Name: khislavichi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=khislavichi
+    City Number: 1552; City Name: sosenskiy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sosenskiy
+    City Number: 1553; City Name: korablino; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=korablino
+    City Number: 1554; City Name: kovylkino; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kovylkino
+    City Number: 1555; City Name: kamyshla; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kamyshla
+    City Number: 1556; City Name: tolbazy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tolbazy
+    City Number: 1557; City Name: uyskoye; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=uyskoye
+    City Number: 1558; City Name: borovskoy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=borovskoy
+    City Number: 1559; City Name: sergeyevka; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sergeyevka
+    City Number: 1560; City Name: poltavka; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=poltavka
+    City Number: 1561; City Name: kachiry; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kachiry
+    City Number: 1562; City Name: pankrushikha; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pankrushikha
+    City Number: 1563; City Name: pervomayskoye; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pervomayskoye
+    City Number: 1564; City Name: mezhdurechensk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mezhdurechensk
+    City Number: 1565; City Name: tulun; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tulun
+    City Number: 1566; City Name: osa; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=osa
+    City Number: 1567; City Name: khuzhir; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=khuzhir
+    City Number: 1568; City Name: sosnovo-ozerskoye; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sosnovo-ozerskoye
+    City Number: 1569; City Name: bukachacha; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bukachacha
+    City Number: 1570; City Name: mogocha; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mogocha
+    City Number: 1571; City Name: skovorodino; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=skovorodino
+    City Number: 1572; City Name: zeya; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=zeya
+    City Number: 1573; City Name: chumikan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=chumikan
+    City Number: 1574; City Name: mnogovershinnyy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mnogovershinnyy
+    City Number: 1575; City Name: okha; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=okha
+    City Number: 1576; City Name: beringovskiy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=beringovskiy
+    City Number: 1577; City Name: smithers; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=smithers
+    City Number: 1578; City Name: mackenzie; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mackenzie
+    City Number: 1579; City Name: dawson creek; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=dawson creek
+    City Number: 1580; City Name: high prairie; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=high prairie
+    City Number: 1581; City Name: athabasca; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=athabasca
+    City Number: 1582; City Name: la ronge; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=la ronge
+    City Number: 1583; City Name: buncrana; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=buncrana
+    City Number: 1584; City Name: cumbernauld; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=cumbernauld
+    City Number: 1585; City Name: whitley bay; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=whitley bay
+    City Number: 1586; City Name: vigrestad; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=vigrestad
+    City Number: 1587; City Name: hvide sande; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=hvide sande
+    City Number: 1588; City Name: frederiksvaerk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=frederiksvaerk
+    City Number: 1589; City Name: karlskrona; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=karlskrona
+    City Number: 1590; City Name: linkuva; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=linkuva
+    City Number: 1591; City Name: zilupe; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=zilupe
+    City Number: 1592; City Name: zapadnaya dvina; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=zapadnaya dvina
+    City Number: 1593; City Name: volokolamsk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=volokolamsk
+    City Number: 1594; City Name: sobinka; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sobinka
+    City Number: 1595; City Name: zvenigovo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=zvenigovo
+    City Number: 1596; City Name: grakhovo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=grakhovo
+    City Number: 1597; City Name: starobaltachevo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=starobaltachevo
+    City Number: 1598; City Name: nizhniy ufaley; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nizhniy ufaley
+    City Number: 1599; City Name: armizonskoye; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=armizonskoye
+    City Number: 1600; City Name: tyukalinsk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tyukalinsk
+    City Number: 1601; City Name: ust-tarka; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ust-tarka
+    City Number: 1602; City Name: ubinskoye; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ubinskoye
+    City Number: 1603; City Name: kozhevnikovo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kozhevnikovo
+    City Number: 1604; City Name: suslovo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=suslovo
+    City Number: 1605; City Name: divnogorsk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=divnogorsk
+    City Number: 1606; City Name: ilanskiy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ilanskiy
+    City Number: 1607; City Name: chunskiy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=chunskiy
+    City Number: 1608; City Name: shestakovo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=shestakovo
+    City Number: 1609; City Name: kazachinskoye; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kazachinskoye
+    City Number: 1610; City Name: taksimo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=taksimo
+    City Number: 1611; City Name: tokur; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tokur
+    City Number: 1612; City Name: ayan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ayan
+    City Number: 1613; City Name: arman; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=arman
+    City Number: 1614; City Name: ola; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ola
+    City Number: 1615; City Name: klyuchi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=klyuchi
+    City Number: 1616; City Name: anchorage; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=anchorage
+    City Number: 1617; City Name: haines junction; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=haines junction
+    City Number: 1618; City Name: juneau; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=juneau
+    City Number: 1619; City Name: fort nelson; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=fort nelson
+    City Number: 1620; City Name: high level; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=high level
+    City Number: 1621; City Name: iqaluit; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=iqaluit
+    City Number: 1622; City Name: paamiut; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=paamiut
+    City Number: 1623; City Name: qaqortoq; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=qaqortoq
+    City Number: 1624; City Name: hofn; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=hofn
+    City Number: 1625; City Name: stornoway; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=stornoway
+    City Number: 1626; City Name: golspie; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=golspie
+    City Number: 1627; City Name: peterhead; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=peterhead
+    City Number: 1628; City Name: varhaug; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=varhaug
+    City Number: 1629; City Name: kristiansand; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kristiansand
+    City Number: 1630; City Name: kungalv; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kungalv
+    City Number: 1631; City Name: linkoping; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=linkoping
+    City Number: 1632; City Name: pavilosta; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pavilosta
+    City Number: 1633; City Name: seredka; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=seredka
+    City Number: 1634; City Name: parfino; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=parfino
+    City Number: 1635; City Name: maksatikha; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=maksatikha
+    City Number: 1636; City Name: danilov; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=danilov
+    City Number: 1637; City Name: makaryev; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=makaryev
+    City Number: 1638; City Name: tuzha; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tuzha
+    City Number: 1639; City Name: yukamenskoye; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=yukamenskoye
+    City Number: 1640; City Name: kondratovo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kondratovo
+    City Number: 1641; City Name: nizhniy tagil; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nizhniy tagil
+    City Number: 1642; City Name: turinsk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=turinsk
+    City Number: 1643; City Name: tobolsk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tobolsk
+    City Number: 1644; City Name: tevriz; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tevriz
+    City Number: 1645; City Name: kedrovyy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kedrovyy
+    City Number: 1646; City Name: molchanovo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=molchanovo
+    City Number: 1647; City Name: teguldet; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=teguldet
+    City Number: 1648; City Name: pirovskoye; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pirovskoye
+    City Number: 1649; City Name: motygino; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=motygino
+    City Number: 1650; City Name: kodinsk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kodinsk
+    City Number: 1651; City Name: rudnogorsk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=rudnogorsk
+    City Number: 1652; City Name: kirensk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kirensk
+    City Number: 1653; City Name: kropotkin; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kropotkin
+    City Number: 1654; City Name: serebryanyy bor; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=serebryanyy bor
+    City Number: 1655; City Name: tommot; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tommot
+    City Number: 1656; City Name: okhotsk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=okhotsk
+    City Number: 1657; City Name: tigil; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tigil
+    City Number: 1658; City Name: palana; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=palana
+    City Number: 1659; City Name: ossora; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ossora
+    City Number: 1660; City Name: tilichiki; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tilichiki
+    City Number: 1661; City Name: nome; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nome
+    City Number: 1662; City Name: homer; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=homer
+    City Number: 1663; City Name: whitehorse; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=whitehorse
+    City Number: 1664; City Name: hay river; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=hay river
+    City Number: 1665; City Name: yellowknife; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=yellowknife
+    City Number: 1666; City Name: pangnirtung; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pangnirtung
+    City Number: 1667; City Name: nuuk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nuuk
+    City Number: 1668; City Name: vagur; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=vagur
+    City Number: 1669; City Name: stromness; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=stromness
+    City Number: 1670; City Name: lerwick; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lerwick
+    City Number: 1671; City Name: amot; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=amot
+    City Number: 1672; City Name: skotterud; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=skotterud
+    City Number: 1673; City Name: fagersta; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=fagersta
+    City Number: 1674; City Name: lohja; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lohja
+    City Number: 1675; City Name: narva-joesuu; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=narva-joesuu
+    City Number: 1676; City Name: novaya ladoga; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=novaya ladoga
+    City Number: 1677; City Name: vytegra; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=vytegra
+    City Number: 1678; City Name: kharovsk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kharovsk
+    City Number: 1679; City Name: nyuksenitsa; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nyuksenitsa
+    City Number: 1680; City Name: zarya; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=zarya
+    City Number: 1681; City Name: lesnoy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lesnoy
+    City Number: 1682; City Name: kerchevskiy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kerchevskiy
+    City Number: 1683; City Name: volchansk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=volchansk
+    City Number: 1684; City Name: uray; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=uray
+    City Number: 1685; City Name: kondinskoye; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kondinskoye
+    City Number: 1686; City Name: salym; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=salym
+    City Number: 1687; City Name: megion; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=megion
+    City Number: 1688; City Name: kargasok; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kargasok
+    City Number: 1689; City Name: belyy yar; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=belyy yar
+    City Number: 1690; City Name: teya; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=teya
+    City Number: 1691; City Name: baykit; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=baykit
+    City Number: 1692; City Name: vanavara; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=vanavara
+    City Number: 1693; City Name: yerbogachen; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=yerbogachen
+    City Number: 1694; City Name: vitim; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=vitim
+    City Number: 1695; City Name: lensk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lensk
+    City Number: 1696; City Name: nizhniy kuranakh; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nizhniy kuranakh
+    City Number: 1697; City Name: mokhsogollokh; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mokhsogollokh
+    City Number: 1698; City Name: amga; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=amga
+    City Number: 1699; City Name: solnechnyy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=solnechnyy
+    City Number: 1700; City Name: ust-omchug; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ust-omchug
+    City Number: 1701; City Name: omsukchan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=omsukchan
+    City Number: 1702; City Name: kenai; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kenai
+    City Number: 1703; City Name: fairbanks; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=fairbanks
+    City Number: 1704; City Name: norman wells; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=norman wells
+    City Number: 1705; City Name: maniitsoq; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=maniitsoq
+    City Number: 1706; City Name: klaksvik; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=klaksvik
+    City Number: 1707; City Name: brae; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=brae
+    City Number: 1708; City Name: floro; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=floro
+    City Number: 1709; City Name: ovre ardal; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ovre ardal
+    City Number: 1710; City Name: roros; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=roros
+    City Number: 1711; City Name: bollnas; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bollnas
+    City Number: 1712; City Name: kangasala; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kangasala
+    City Number: 1713; City Name: varkaus; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=varkaus
+    City Number: 1714; City Name: suoyarvi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=suoyarvi
+    City Number: 1715; City Name: pudozh; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pudozh
+    City Number: 1716; City Name: shalakusha; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=shalakusha
+    City Number: 1717; City Name: mirnyy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mirnyy
+    City Number: 1718; City Name: urdoma; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=urdoma
+    City Number: 1719; City Name: kortkeros; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kortkeros
+    City Number: 1720; City Name: troitsko-pechorsk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=troitsko-pechorsk
+    City Number: 1721; City Name: polunochnoye; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=polunochnoye
+    City Number: 1722; City Name: zelenoborsk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=zelenoborsk
+    City Number: 1723; City Name: oktyabrskoye; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=oktyabrskoye
+    City Number: 1724; City Name: novoagansk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=novoagansk
+    City Number: 1725; City Name: strezhevoy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=strezhevoy
+    City Number: 1726; City Name: turukhansk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=turukhansk
+    City Number: 1727; City Name: tura; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tura
+    City Number: 1728; City Name: chernyshevskiy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=chernyshevskiy
+    City Number: 1729; City Name: suntar; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=suntar
+    City Number: 1730; City Name: verkhnevilyuysk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=verkhnevilyuysk
+    City Number: 1731; City Name: kysyl-syr; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kysyl-syr
+    City Number: 1732; City Name: churapcha; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=churapcha
+    City Number: 1733; City Name: dzhebariki-khaya; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=dzhebariki-khaya
+    City Number: 1734; City Name: kholodnyy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kholodnyy
+    City Number: 1735; City Name: orotukan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=orotukan
+    City Number: 1736; City Name: evensk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=evensk
+    City Number: 1737; City Name: anadyr; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=anadyr
+    City Number: 1738; City Name: college; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=college
+    City Number: 1739; City Name: mayo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mayo
+    City Number: 1740; City Name: vestmanna; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=vestmanna
+    City Number: 1741; City Name: sistranda; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sistranda
+    City Number: 1742; City Name: klaebu; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=klaebu
+    City Number: 1743; City Name: ostersund; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ostersund
+    City Number: 1744; City Name: umea; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=umea
+    City Number: 1745; City Name: ylivieska; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ylivieska
+    City Number: 1746; City Name: kajaani; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kajaani
+    City Number: 1747; City Name: muyezerskiy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=muyezerskiy
+    City Number: 1748; City Name: kodino; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kodino
+    City Number: 1749; City Name: karpogory; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=karpogory
+    City Number: 1750; City Name: blagoyevo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=blagoyevo
+    City Number: 1751; City Name: sindor; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sindor
+    City Number: 1752; City Name: nizhniy odes; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nizhniy odes
+    City Number: 1753; City Name: inta; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=inta
+    City Number: 1754; City Name: igrim; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=igrim
+    City Number: 1755; City Name: muravlenko; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=muravlenko
+    City Number: 1756; City Name: gubkinskiy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=gubkinskiy
+    City Number: 1757; City Name: tarko-sale; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tarko-sale
+    City Number: 1758; City Name: sangar; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sangar
+    City Number: 1759; City Name: borogontsy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=borogontsy
+    City Number: 1760; City Name: khandyga; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=khandyga
+    City Number: 1761; City Name: ust-nera; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ust-nera
+    City Number: 1762; City Name: shirokiy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=shirokiy
+    City Number: 1763; City Name: seymchan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=seymchan
+    City Number: 1764; City Name: komsomolskiy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=komsomolskiy
+    City Number: 1765; City Name: lavrentiya; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lavrentiya
+    City Number: 1766; City Name: barrow; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=barrow
+    City Number: 1767; City Name: inuvik; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=inuvik
+    City Number: 1768; City Name: sisimiut; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sisimiut
+    City Number: 1769; City Name: husavik; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=husavik
+    City Number: 1770; City Name: roald; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=roald
+    City Number: 1771; City Name: bronnoysund; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bronnoysund
+    City Number: 1772; City Name: rognan; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=rognan
+    City Number: 1773; City Name: skelleftea; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=skelleftea
+    City Number: 1774; City Name: tornio; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tornio
+    City Number: 1775; City Name: zelenoborskiy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=zelenoborskiy
+    City Number: 1776; City Name: severodvinsk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=severodvinsk
+    City Number: 1777; City Name: kamenka; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kamenka
+    City Number: 1778; City Name: leshukonskoye; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=leshukonskoye
+    City Number: 1779; City Name: ust-tsilma; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ust-tsilma
+    City Number: 1780; City Name: puteyets; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=puteyets
+    City Number: 1781; City Name: muzhi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=muzhi
+    City Number: 1782; City Name: aksarka; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=aksarka
+    City Number: 1783; City Name: nadym; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nadym
+    City Number: 1784; City Name: novyy urengoy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=novyy urengoy
+    City Number: 1785; City Name: urengoy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=urengoy
+    City Number: 1786; City Name: svetlogorsk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=svetlogorsk
+    City Number: 1787; City Name: aykhal; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=aykhal
+    City Number: 1788; City Name: nyurba; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=nyurba
+    City Number: 1789; City Name: zhigansk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=zhigansk
+    City Number: 1790; City Name: verkhoyansk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=verkhoyansk
+    City Number: 1791; City Name: batagay; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=batagay
+    City Number: 1792; City Name: zyryanka; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=zyryanka
+    City Number: 1793; City Name: srednekolymsk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=srednekolymsk
+    City Number: 1794; City Name: cherskiy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=cherskiy
+    City Number: 1795; City Name: bilibino; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bilibino
+    City Number: 1796; City Name: aklavik; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=aklavik
+    City Number: 1797; City Name: clyde river; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=clyde river
+    City Number: 1798; City Name: aasiaat; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=aasiaat
+    City Number: 1799; City Name: qasigiannguit; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=qasigiannguit
+    City Number: 1800; City Name: sorland; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sorland
+    City Number: 1801; City Name: kjopsvik; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kjopsvik
+    City Number: 1802; City Name: kiruna; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kiruna
+    City Number: 1803; City Name: kautokeino; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=kautokeino
+    City Number: 1804; City Name: verkhnetulomskiy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=verkhnetulomskiy
+    City Number: 1805; City Name: ostrovnoy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ostrovnoy
+    City Number: 1806; City Name: naryan-mar; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=naryan-mar
+    City Number: 1807; City Name: usinsk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=usinsk
+    City Number: 1808; City Name: severnyy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=severnyy
+    City Number: 1809; City Name: yar-sale; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=yar-sale
+    City Number: 1810; City Name: tazovskiy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tazovskiy
+    City Number: 1811; City Name: snezhnogorsk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=snezhnogorsk
+    City Number: 1812; City Name: khatanga; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=khatanga
+    City Number: 1813; City Name: udachnyy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=udachnyy
+    City Number: 1814; City Name: batagay-alyta; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=batagay-alyta
+    City Number: 1815; City Name: deputatskiy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=deputatskiy
+    City Number: 1816; City Name: belaya gora; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=belaya gora
+    City Number: 1817; City Name: leningradskiy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=leningradskiy
+    City Number: 1818; City Name: tuktoyaktuk; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tuktoyaktuk
+    City Number: 1819; City Name: upernavik; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=upernavik
+    City Number: 1820; City Name: ilulissat; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ilulissat
+    City Number: 1821; City Name: bud; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=bud
+    City Number: 1822; City Name: gravdal; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=gravdal
+    City Number: 1823; City Name: andenes; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=andenes
+    City Number: 1824; City Name: lyngseidet; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=lyngseidet
+    City Number: 1825; City Name: rypefjord; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=rypefjord
+    City Number: 1826; City Name: mehamn; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=mehamn
+    City Number: 1827; City Name: pechenga; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pechenga
+    City Number: 1828; City Name: iskateley; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=iskateley
+    City Number: 1829; City Name: talnakh; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=talnakh
+    City Number: 1830; City Name: saskylakh; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=saskylakh
+    City Number: 1831; City Name: tiksi; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=tiksi
+    City Number: 1832; City Name: ust-kuyga; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=ust-kuyga
+    City Number: 1833; City Name: chokurdakh; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=chokurdakh
+    City Number: 1834; City Name: pevek; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=pevek
+    City Number: 1835; City Name: skjervoy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=skjervoy
+    City Number: 1836; City Name: havoysund; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=havoysund
+    City Number: 1837; City Name: vardo; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=vardo
+    City Number: 1838; City Name: dikson; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=dikson
+    City Number: 1839; City Name: qaanaaq; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=qaanaaq
+    City Number: 1840; City Name: narsaq; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=narsaq
+    City Number: 1841; City Name: longyearbyen; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=longyearbyen
+    City Number: 1842; City Name: sovetskiy; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=sovetskiy
+    City Number: 1843; City Name: berlevag; Requested URL: http://api.openweathermap.org/data/2.5/weather?appid=16aac2742b26c95c8dbf451537f73963&units=imperial&q=berlevag
+    
+
+
+
+
+    1843
+
+
+
+
+```python
+weather_df = pd.DataFrame(data={'City':cities_final,
+                                'Latitude':lat_data,
+                                'Longitude':long_data,
+                                'Temperature':temp_data,
+                                'Humidity':humidity_data,
+                                'Cloudiness':cloud_data,
+                                'Wind Speed':wind_data})
+weather_df['Date'] = ['12/10/2017' for city in weather_df['City']]
+weather_df.head()
+```
+
+
+
+
+<div>
+<style>
+    .dataframe thead tr:only-child th {
+        text-align: right;
+    }
+
+    .dataframe thead th {
+        text-align: left;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>City</th>
+      <th>Cloudiness</th>
+      <th>Humidity</th>
+      <th>Latitude</th>
+      <th>Longitude</th>
+      <th>Temperature</th>
+      <th>Wind Speed</th>
+      <th>Date</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>vaini</td>
+      <td>20</td>
+      <td>65</td>
+      <td>-21.20</td>
+      <td>-175.20</td>
+      <td>80.60</td>
+      <td>9.17</td>
+      <td>12/10/2017</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>rikitea</td>
+      <td>76</td>
+      <td>100</td>
+      <td>-23.12</td>
+      <td>-134.97</td>
+      <td>77.14</td>
+      <td>19.42</td>
+      <td>12/10/2017</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>punta arenas</td>
+      <td>75</td>
+      <td>81</td>
+      <td>-53.15</td>
+      <td>-70.92</td>
+      <td>46.40</td>
+      <td>5.82</td>
+      <td>12/10/2017</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>ushuaia</td>
+      <td>40</td>
+      <td>75</td>
+      <td>-54.80</td>
+      <td>-68.30</td>
+      <td>44.60</td>
+      <td>4.70</td>
+      <td>12/10/2017</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>hermanus</td>
+      <td>0</td>
+      <td>96</td>
+      <td>-34.42</td>
+      <td>19.23</td>
+      <td>44.74</td>
+      <td>3.60</td>
+      <td>12/10/2017</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+
+```python
+# Save data to csv
+output_path = os.path.join('output', 'weather_data.csv')
+weather_df.to_csv(output_path)
+```
+
+# Create graphs to visualize trends
+
+Create the following plots:
+- Temperature (F) vs. Latitude
+- Humidity (%) vs. Latitude
+- Cloudiness (%) vs. Latitude
+- Wind Speed (mph) vs. Latitude
+
+Save pngs for each plot.
+
+## Latitude vs. Temperature
+
+
+```python
+# Generate plot using latitude and temperature data.
+plt.scatter(weather_df['Latitude'], weather_df['Temperature'],
+            color='b', edgecolor='black', alpha=.5)
+
+# Give the plot a title.
+plt.title('City Latitude vs. Temperature (12/10/2017)')
+
+# Label the x- and y-axes.
+plt.xlabel('Latitude')
+plt.ylabel('Temperature (Degrees Fahrenheit)')
+
+# Set x- and y-limits.
+plt.xlim(-60, 80)
+plt.ylim(-100, 125)
+
+# Use seaborn library to set the grid background style.
+sns.set_style('darkgrid')
+
+# Save chart as a PNG and display
+output_path = os.path.join('output', '01_latitude-vs-temperature.png')
+plt.savefig(output_path, dpi=100)
+plt.show()
+```
+
+
+![png](output/01_latitude-vs-temperature.png)
+
+
+## Latitude vs. Humidity
+
+
+```python
+# Generate plot using latitude and temperature data.
+plt.scatter(weather_df['Latitude'], weather_df['Humidity'],
+            color='r', edgecolor='black', alpha=.4)
+
+# Give the plot a title.
+plt.title('City Latitude vs. Humidity (12/10/2017)')
+
+# Label the x- and y-axes.
+plt.xlabel('Latitude')
+plt.ylabel('Humidity (%)')
+
+# Set x- and y-limits.
+plt.xlim(-60, 80)
+plt.ylim(-20, 120)
+
+# Use seaborn library to set the grid background style.
+sns.set_style('darkgrid')
+
+# Save chart as a PNG and display
+output_path = os.path.join('output', '02_latitude-vs-humidity.png')
+plt.savefig(output_path, dpi=100)
+plt.show()
+```
+
+
+![png](output/02_latitude-vs-humidity.png)
+
+
+## Latitude vs. Cloudiness
+
+
+```python
+# Generate plot using latitude and temperature data.
+plt.scatter(weather_df['Latitude'], weather_df['Cloudiness'],
+            color='grey', edgecolor='black', alpha=.4)
+
+# Give the plot a title.
+plt.title('City Latitude vs. Cloudiness (12/10/2017)')
+
+# Label the x- and y-axes.
+plt.xlabel('Latitude')
+plt.ylabel('Cloudiness (%)')
+
+# Set x- and y-limits.
+plt.xlim(-60, 80)
+plt.ylim(-20, 120)
+
+# Use seaborn library to set the grid background style.
+sns.set_style('darkgrid')
+
+# Save chart as a PNG and display
+output_path = os.path.join('output', '03_latitude-vs-cloudiness.png')
+plt.savefig(output_path, dpi=100)
+plt.show()
+```
+
+
+![png](output/03_latitude-vs-cloudiness.png)
+
+
+## Latitude vs. Wind Speed
+
+
+```python
+# Generate plot using latitude and temperature data.
+plt.scatter(weather_df['Latitude'], weather_df['Wind Speed'],
+            color='green', edgecolor='black', alpha=.4)
+
+# Give the plot a title.
+plt.title('City Latitude vs. Wind Speed (12/10/2017)')
+
+# Label the x- and y-axes.
+plt.xlabel('Latitude')
+plt.ylabel('Wind Speed (mph)')
+
+# Set x- and y-limits.
+plt.xlim(-60, 80)
+plt.ylim(-5, 45)
+
+# Use seaborn library to set the grid background style.
+sns.set_style('darkgrid')
+
+# Save chart as a PNG and display
+output_path = os.path.join('output', '04_latitude-vs-wind-speed.png')
+plt.savefig(output_path, dpi=100)
+plt.show()
+```
+
+
+![png](output/04_latitude-vs-wind-speed.png)
+
