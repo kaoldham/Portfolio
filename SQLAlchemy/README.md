@@ -2,7 +2,7 @@
 ## data_engineering.ipynb
 This file previews and cleans the raw data from the two CSVs in the 'Resources' folder. Clean measurement data is saved to a new CSV in the 'Resources' folder.
 ## database_engineering.ipynb
-This file uses SQLAlchemy to model table schemas to contain data from each CSV and creates a sqlite database for these tables.
+This file uses SQLAlchemy to model table schemas to contain data from each CSV and creates a SQLite database for these tables.
 ## climate_app.py
 Creates a Flask API based on the climate_analysis.ipynb queries.
 **Available Routes:**
