@@ -19,5 +19,5 @@ Conducts the following analyses:
 ![png](output/precip_barchart.png)
 - Creates a histogram of observed temperature frequency at the station with the most observations.
 ![png](output/temp_histogram.png)
-- Calculate the minimum, average, and maximum temperatures for a planned vacation using the matching dates from the previous year (i.e. "2017-01-01" if the trip start date was "2018-01-01") and uses these values to create a bar chart.
+- Calculate the minimum, average, and maximum temperatures for a planned vacation using the matching dates from the previous year (i.e. "2017-01-01" if the trip start date was "2018-01-01") and uses these values to create a bar chart.  
 ![png](output/trip_temps_barchart.png)
